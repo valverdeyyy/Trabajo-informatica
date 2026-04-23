@@ -1,5 +1,23 @@
 #include <stdio.h>
 int main(){
+  int op1;
+  printf("Escriba 1 si quiere recomendacion o escriba 2 si quiere ver estadisticas: ");
+  scanf("%i", &op1);
+  do{
+    if (op1 == "1"){
+      printf("Aquí ponemos lo de recomendación");
+    }
+    else if(op1 == "2"){
+      printf("Aquí ponemos lo de estadísticas");
+
+    }
+   else{
+      printf("Tiene que escribir 1 o 2);
+   }
+    
+
+    
+  }while(op1!=1 && op1!=2);
 
 
 
