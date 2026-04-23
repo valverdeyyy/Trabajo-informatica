@@ -1,8 +1,12 @@
 #include <stdio.h>
-int main(){
-  int op1;
-  printf("Escriba 1 si quiere recomendacion o escriba 2 si quiere ver estadisticas: ");
-  scanf("%i", &op1);
+int main() {
+    int op1;
+	printf("Le presentamos la aplicacion para poder observar los datos de las actividaddes fisicas de Madrid \n");
+    printf("¿Que desea realizar?\n");
+    printf("(1) Recomendacion personalizada \t (2) Ver estadisticas");
+
+	scanf("%i",&op1);
+	
   do{
     if (op1 == 1){
       printf("Aqui ponemos lo de recomendacion");
@@ -12,15 +16,11 @@ int main(){
 
     }
    else{
-      printf("Tiene que escribir 1 o 2);
+      printf("Tiene que escribir 1 o 2");
    }
-    
-
     
   }while(op1!=1 && op1!=2);
 
 
-
-
-
+	return 0;
 }
