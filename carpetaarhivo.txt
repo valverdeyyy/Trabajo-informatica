@@ -4,11 +4,11 @@ int main(){
   printf("Escriba 1 si quiere recomendacion o escriba 2 si quiere ver estadisticas: ");
   scanf("%i", &op1);
   do{
-    if (op1 == "1"){
-      printf("Aquí ponemos lo de recomendación");
+    if (op1 == 1){
+      printf("Aqui ponemos lo de recomendacion");
     }
-    else if(op1 == "2"){
-      printf("Aquí ponemos lo de estadísticas");
+    else if(op1 == 2){
+      printf("Aqui ponemos lo de estadisticas");
 
     }
    else{
