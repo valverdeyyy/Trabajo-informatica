@@ -3,7 +3,7 @@ int main() {
     int op1;
 	printf("Le presentamos la aplicacion para poder observar los datos de las actividaddes fisicas de Madrid \n");
     printf("¿Que desea realizar?\n");
-    printf("(1) Recomendacion personalizada \t (2) Ver estadisticas");
+    printf("(1) Recomendacion personalizada \t (2) Ver estadisticas\n");
 
 	scanf("%i",&op1);
 	
