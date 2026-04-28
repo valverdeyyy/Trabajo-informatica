@@ -6,7 +6,7 @@ int main (){
 	char recom[N];
 	int i;
 
-	printf("Introduzca la hora a la que desea realizar la actividad, la actividad y donde la sea practicar: \n");
+	printf("Introduzca la hora a la que desea realizar la actividad, la actividad y donde la sea practicar: \n");//hay que poner la hora separada con :, y la actividad y el sitio y la hora con espacios*//
 	scanf("%c", &hor_act_lug);
 	
 	FILE *pf;
