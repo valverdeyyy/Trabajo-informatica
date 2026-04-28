@@ -1,0 +1,33 @@
+#include <stdio.h>
+#define N 5000
+int main (){
+	
+	char hor_act_lug;
+	char recom[N];
+	int i;
+
+	printf("Introduzca la hora a la que desea realizar la actividad, la actividad y donde la sea practicar: \n");
+	scanf("%c", &hor_act_lug);
+	
+	FILE *pf;
+	pf = fopen("dataset.csv", "r");
+	
+	for(i = 0; i<N; i++)
+	{
+		if (fscanf(pf, "%c", &i))
+	{
+		if(i==hor_act_lug)
+		{
+			recom[i] = i;
+		}
+	}
+	}
+	fclose(pf);
+	
+	for(recom[i] = 0; recom[i] < N; i++)
+	{
+		printf("Recomendado para ti: %c\n", recom[i]);
+	}
+	
+	return 0;
+}
