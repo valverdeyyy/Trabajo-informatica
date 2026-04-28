@@ -1,4 +1,16 @@
 #include <stdio.h>
+typedef struct {
+int ano, mes, dia;
+char dsemana;
+int hora;
+} diayhora;
+
+typedef struct {
+diayhora;
+char horai, horaf, actividad, modalidad, centro;
+int plazas, ocupadas, libres;
+}ficha;
+
 int main() {
     char op1;
 	printf("Le presentamos la aplicacion para poder observar los datos de las actividaes fisicas de Madrid \n");
