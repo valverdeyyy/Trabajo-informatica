@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_ACTIVIDADES 5100
+#define MAX_CAMPO       64
+
+typedef struct {
+    int  anio;
+    int  mes;
+    int  dia;
+    char dia_semana[MAX_CAMPO];
+    char hora_inicio[MAX_CAMPO];
+    char hora_fin[MAX_CAMPO];
+    char actividad_base[MAX_CAMPO];
+    char modalidad[MAX_CAMPO];
+    char centro[MAX_CAMPO];
+    int  plazas;
+    int  ocupadas;
+    int  libres;
+    char tipo_actividad[MAX_CAMPO];
+} Actividad;
+
+Actividad actividades[MAX_ACTIVIDADES];
+int total = 0;
+
+int cargar_csv(const char *ruta) {
+    FILE *f = fopen(ruta, "r");
+    if (f == NULL) {
+        printf("Error: no se pudo abrir '%s'\n", ruta);
+        return 0;
+    }
+
+    char linea[512];
+    fgets(linea, sizeof(linea), f);
+
+    total = 0;
+    while (fgets(linea, sizeof(linea), f) != NULL && total < MAX_ACTIVIDADES) {
+        linea[strcspn(linea, "\n")] = '\0';
+
+        Actividad a;
+        int leidos = sscanf(linea,
+            "%d %d %d %s %s %s %s %s %s %d %d %d %s",
+            &a.anio, &a.mes, &a.dia,
+            a.dia_semana,
+            a.hora_inicio, a.hora_fin,
+            a.actividad_base, a.modalidad, a.centro,
+            &a.plazas, &a.ocupadas, &a.libres,
+            a.tipo_actividad);
+
+        if (leidos == 13) {
+            actividades[total] = a;
+            total++;
+        }
+    }
+
+    fclose(f);
+    printf("Se cargaron %d actividades.\n\n", total);
+    return 1;
