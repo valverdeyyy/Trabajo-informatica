@@ -56,3 +56,57 @@ int cargar_csv(const char *ruta) {
     fclose(f);
     printf("Se cargaron %d actividades.\n\n", total);
     return 1;
+}
+
+void ordenar_por_lugar();
+void ordenar_por_horario();
+void ordenar_por_actividad();
+void ordenar_por_libres();
+int  hora_a_minutos(const char *hora);
+void mostrar_actividades(int n);
+
+void menu_ordenar() {
+    int opcion;
+
+    printf("=== ORDENAR ACTIVIDADES ===\n");
+    printf("1) Por lugar (centro deportivo)\n");
+    printf("2) Por horario (hora de inicio)\n");
+    printf("3) Por actividad (nombre)\n");
+    printf("4) Por plazas libres (mayor a menor)\n");
+    printf("0) Salir\n");
+    printf("Elige una opcion: ");
+    scanf("%d", &opcion);
+
+    switch (opcion) {
+        case 1:
+            ordenar_por_lugar();
+            printf("\n--- Actividades ordenadas por LUGAR ---\n\n");
+            mostrar_actividades(total);
+            break;
+
+        case 2:
+            ordenar_por_horario();
+            printf("\n--- Actividades ordenadas por HORARIO ---\n\n");
+            mostrar_actividades(total);
+            break;
+
+        case 3:
+            ordenar_por_actividad();
+            printf("\n--- Actividades ordenadas por ACTIVIDAD ---\n\n");
+            mostrar_actividades(total);
+            break;
+
+        case 4:
+            ordenar_por_libres();
+            printf("\n--- Actividades ordenadas por PLAZAS LIBRES ---\n\n");
+            mostrar_actividades(total);
+            break;
+
+        case 0:
+            printf("Hasta luego.\n");
+            break;
+
+        default:
+            printf("Opcion no valida.\n");
+    }
+}
