@@ -110,3 +110,107 @@ void menu_ordenar() {
             printf("Opcion no valida.\n");
     }
 }
+
+void ordenar_por_lugar() {
+    int i, j;
+    Actividad temp;
+
+    for (i = 0; i < total - 1; i++) {
+        for (j = 0; j < total - 1 - i; j++) {
+            if (strcmp(actividades[j].centro, actividades[j+1].centro) > 0) {
+                temp             = actividades[j];
+                actividades[j]   = actividades[j+1];
+                actividades[j+1] = temp;
+            }
+        }
+    }
+}
+
+void ordenar_por_horario() {
+    int i, j;
+    Actividad temp;
+
+    for (i = 0; i < total - 1; i++) {
+        for (j = 0; j < total - 1 - i; j++) {
+            if (hora_a_minutos(actividades[j].hora_inicio) >
+                hora_a_minutos(actividades[j+1].hora_inicio)) {
+                temp             = actividades[j];
+                actividades[j]   = actividades[j+1];
+                actividades[j+1] = temp;
+            }
+        }
+    }
+}
+
+void ordenar_por_actividad() {
+    int i, j;
+    Actividad temp;
+
+    for (i = 0; i < total - 1; i++) {
+        for (j = 0; j < total - 1 - i; j++) {
+            if (strcmp(actividades[j].actividad_base, actividades[j+1].actividad_base) > 0) {
+                temp             = actividades[j];
+                actividades[j]   = actividades[j+1];
+                actividades[j+1] = temp;
+            }
+        }
+    }
+}
+
+void ordenar_por_libres() {
+    int i, j;
+    Actividad temp;
+
+    for (i = 0; i < total - 1; i++) {
+        for (j = 0; j < total - 1 - i; j++) {
+            if (actividades[j].libres < actividades[j+1].libres) {
+                temp             = actividades[j];
+                actividades[j]   = actividades[j+1];
+                actividades[j+1] = temp;
+            }
+        }
+    }
+}
+
+int hora_a_minutos(const char *hora) {
+    int h = 0, m = 0;
+    sscanf(hora, "%d:%d", &h, &m);
+    return h * 60 + m;
+}
+
+void mostrar_actividades(int n) {
+    int i;
+    if (n > total) n = total;
+
+    printf("%-30s %-10s %-8s %-35s %s\n",
+           "Centro", "Hora ini", "Hora fin", "Actividad", "Libres");
+    printf("%-30s %-10s %-8s %-35s %s\n",
+           "------------------------------", "----------", "--------",
+           "-----------------------------------", "------");
+
+    for (i = 0; i < n; i++) {
+        printf("%-30s %-10s %-8s %-35s %d\n",
+               actividades[i].centro,
+               actividades[i].hora_inicio,
+               actividades[i].hora_fin,
+               actividades[i].actividad_base,
+               actividades[i].libres);
+    }
+    printf("(mostrando %d de %d)\n\n", n, total);
+}
+
+int main(int argc, char *argv[]) {
+    const char *ruta = "dataset.csv";
+
+    if (argc >= 2) {
+        ruta = argv[1];
+    }
+
+    if (!cargar_csv(ruta)) {
+        return 1;
+    }
+
+    menu_ordenar();
+
+    return 0;
+}
