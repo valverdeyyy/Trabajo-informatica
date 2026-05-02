@@ -102,3 +102,31 @@ int cargar_actividad(const char *linea, Actividad *a) {
 	else
     return 0;
 }
+
+
+
+//Funcion de ordenacion descendente para no estar repitiendola todo el rato
+void orden_descendente(DiaSemana dias[], int n) {
+    int i, j;
+    DiaSemana aux0;
+    for (i = 0; i < n - 1; i++) {
+        for (j = 0; j < n - 1 - i; j++) {
+            if (dias[j].ocupadas_total < dias[j + 1].ocupadas_total) {
+                aux0         = dias[j];
+                dias[j]     = dias[j + 1];
+                dias[j + 1] = aux0;
+            }
+        }
+    }
+}
+
+//Funcion para ver de manera grafica la popularidad
+void imprimir_barra(int valor, int maximo) {
+    int ancho  = 40;
+    int llenas = (maximo > 0) ? (valor * ancho) / maximo : 0;
+    int i;
+    printf("[");
+    for (i = 0; i < ancho; i++)
+        printf(i < llenas ? "#" : " ");
+    printf("]");
+}
