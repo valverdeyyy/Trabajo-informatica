@@ -1,0 +1,57 @@
+/* Lee dataset.csv, carga cada fila en un array de structs Actividad,
+  determina qué día de la semana tiene mayor popularidad (suma de
+  plazas ocupadas) y muestra los días ordenados de mayor a menor.
+  */
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_ACTIVIDADES 5100
+#define MAX_CAMPO        64
+#define MAX_DIAS          7
+#define MAX_LINEA       512
+
+#define EXITO  0
+#define ERROR  1
+
+// Estructura principal
+typedef struct {
+    int  anio;
+    int  mes;
+    int  dia;
+    char dia_semana[MAX_CAMPO];
+    char hora_inicio[MAX_CAMPO];
+    char hora_fin[MAX_CAMPO];
+    char actividad_base[MAX_CAMPO];
+    char modalidad[MAX_CAMPO];
+    char centro[MAX_CAMPO];
+    int  plazas;
+    int  ocupadas;
+    int  libres;
+    char tipo_actividad[MAX_CAMPO];
+} Actividad;
+
+//Estructura auxiliar para la popularidad por dia
+typedef struct {
+    char nombre[MAX_CAMPO];
+    int  ocupadas_total;
+    int  registros;
+} DiaSemana;
+
+//Función para convertir texto (string) en numero (int)
+//El nombre es por una función "universal" de otra libreria no disponible
+int atoi(const char *s) {
+
+	int resultado = 0;  // Para guardar el número
+    int signo     = 1;  // Por si es negativo
+
+    while (*s == ' ' || *s == '\t') s++;
+
+    if      (*s == '-') { signo = -1; s++; }
+    else if (*s == '+') { s++; }
+
+    while (*s >= '0' && *s <= '9') {
+        resultado = resultado * 10 + (*s - '0'); //Si tien más de decenas, las va "moviendo" a la izquierda
+        s++;
+    }
+    return signo * resultado;
+}
