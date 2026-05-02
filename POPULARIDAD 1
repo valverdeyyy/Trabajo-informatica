@@ -55,3 +55,50 @@ int atoi(const char *s) {
     }
     return signo * resultado;
 }
+
+
+//Función para buscar por columnas lo que se quiera
+void extraer_campo(const char *linea, int col, char *dest, int dest_size) {
+    char sep;
+//Busca los posibles separadores de la lista
+    if      (strchr(linea, ';') != NULL) sep = ';';
+    else if (strchr(linea, ',') != NULL) sep = ',';
+    else                                  sep = ' ';
+//Elige la fila en la que esta
+    const char *p    = linea;
+    int campo_actual = 0;
+//Avanza en dicha linea
+    while (*p != '\0' && campo_actual < col) {
+        if (*p == sep) campo_actual++;
+        p++;
+    }
+//Copia los datos de la columna en "dest[]"
+    int i = 0;
+    while (*p != '\0' && *p != sep && *p != '\n' && *p != '\r' && i < dest_size - 1)
+        dest[i++] = *p++;
+    dest[i] = '\0';
+}
+
+//Con la funcion anterior, guarda cada linea en una structura actividad
+int cargar_actividad(const char *linea, Actividad *a) {
+    char aux0[MAX_CAMPO];
+
+    extraer_campo(linea,  0, aux0,               sizeof(aux0));        a->anio     = atoi(aux0);
+    extraer_campo(linea,  1, aux0,               sizeof(aux0));        a->mes      = atoi(aux0);
+    extraer_campo(linea,  2, aux0,               sizeof(aux0));        a->dia      = atoi(aux0);
+    extraer_campo(linea,  3, a->dia_semana,     sizeof(a->dia_semana));
+    extraer_campo(linea,  4, a->hora_inicio,    sizeof(a->hora_inicio));
+    extraer_campo(linea,  5, a->hora_fin,       sizeof(a->hora_fin));
+    extraer_campo(linea,  6, a->actividad_base, sizeof(a->actividad_base));
+    extraer_campo(linea,  7, a->modalidad,      sizeof(a->modalidad));
+    extraer_campo(linea,  8, a->centro,         sizeof(a->centro));
+    extraer_campo(linea,  9, aux0,               sizeof(aux0));        a->plazas   = atoi(aux0);
+    extraer_campo(linea, 10, aux0,               sizeof(aux0));        a->ocupadas = atoi(aux0);
+    extraer_campo(linea, 11, aux0,               sizeof(aux0));        a->libres   = atoi(aux0);
+    extraer_campo(linea, 12, a->tipo_actividad, sizeof(a->tipo_actividad));
+
+    if (a->dia_semana[0] != '\0')
+    return 1;
+	else
+    return 0;
+}
