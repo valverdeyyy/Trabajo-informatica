@@ -155,14 +155,16 @@ int main() {
     FILE *fp = fopen("dataset.csv", "r");
 
     // Array principal, MEMORIA DINAMICA
-    /*Actividad *actividades = malloc(MAX_ACTIVIDADES * sizeof(*a	ctividades));
+   Actividad * actividades = (Actividad*) malloc(MAX_ACTIVIDADES * sizeof(*actividades));
    	 if (actividades == NULL) {
         printf("Error: memoria no disponible\n");
 		 return -1;
-    } */static Actividad actividades[MAX_ACTIVIDADES];
+    }
+   // Al ser punteros de diferente tipo (void != Actividad) tengo que forzar que el void se convierta en Actividad con (Actividad*)
+   // cast incluido por si se compila como C++
 
-    int n_actividades = 0;
 
+	int n_actividades = 0;
 
     // Array auxiliar de dias
     DiaSemana dias[MAX_DIAS];
@@ -272,6 +274,7 @@ if (resultado == NULL) {
     printf("     Porcentaje      : %d.%d%% del total de ocupacion\n\n",
            top_pct_x10 / 10, top_pct_x10 % 10);
 
-//	free(actividades);
+//liberamos la memoria reservada
+	free(actividades);
     return 0;
 }
