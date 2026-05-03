@@ -1,5 +1,5 @@
 /* Lee dataset.csv, carga cada fila en un array de structs Actividad,
-  determina qué día de la semana tiene mayor popularidad (suma de
+  determina que dia de la semana tiene mayor popularidad (suma de
   plazas ocupadas) y muestra los días ordenados de mayor a menor.
   */
 #include <stdio.h>
@@ -31,15 +31,15 @@ typedef struct {
     char tipo_actividad[MAX_CAMPO];
 } Actividad;
 
-//Estructura auxiliar para la popularidad por dia
+// Estructura auxiliar para la popularidad por dia
 typedef struct {
     char nombre[MAX_CAMPO];
     int  ocupadas_total;
     int  registros;
 } DiaSemana;
 
-//Función para convertir texto (string) en numero (int)
-//El nombre es por una función "universal" de otra libreria no disponible
+// Funcion para convertir texto (string) en numero (int)
+// El nombre es por una funcion "universal" de otra libreria no disponible
 int atoi(const char *s) {
 
 	int resultado = 0;  // Para guardar el número
@@ -51,36 +51,37 @@ int atoi(const char *s) {
     else if (*s == '+') { s++; }
 
     while (*s >= '0' && *s <= '9') {
-        resultado = resultado * 10 + (*s - '0'); //Si tien más de decenas, las va "moviendo" a la izquierda
+        resultado = resultado * 10 + (*s - '0'); // Si tien mas de decenas, las va "moviendo" a la izquierda
         s++;
     }
     return signo * resultado;
 }
 
 
-//Función para buscar por columnas lo que se quiera
+
+// Función para buscar por columnas lo que se quiera
 void extraer_campo(const char *linea, int col, char *dest, int dest_size) {
     char sep;
-//Busca los posibles separadores de la lista
+// Busca los posibles separadores de la lista
     if      (strchr(linea, ';') != NULL) sep = ';';
     else if (strchr(linea, ',') != NULL) sep = ',';
     else                                  sep = ' ';
-//Elige la fila en la que esta
+// Elige la fila en la que esta
     const char *p    = linea;
     int campo_actual = 0;
-//Avanza en dicha linea
+// Avanza en dicha linea
     while (*p != '\0' && campo_actual < col) {
         if (*p == sep) campo_actual++;
         p++;
     }
-//Copia los datos de la columna en "dest[]"
+// Copia los datos de la columna en "dest[]"
     int i = 0;
     while (*p != '\0' && *p != sep && *p != '\n' && *p != '\r' && i < dest_size - 1)
         dest[i++] = *p++;
     dest[i] = '\0';
 }
 
-//Con la funcion anterior, guarda cada linea en una structura actividad
+// Con la funcion anterior, guarda cada linea en una structura actividad
 int cargar_actividad(const char *linea, Actividad *a) {
     char aux0[MAX_CAMPO];
 
@@ -105,8 +106,7 @@ int cargar_actividad(const char *linea, Actividad *a) {
 }
 
 
-
-//Funcion de ordenacion descendente para no estar repitiendola todo el rato
+// Funcion de ordenacion descendente para no estar repitiendola todo el rato
 void orden_descendente(DiaSemana dias[], int n) {
     int i, j;
     DiaSemana aux0;
@@ -121,7 +121,7 @@ void orden_descendente(DiaSemana dias[], int n) {
     }
 }
 
-//Funcion para ver de manera grafica la popularidad
+// Funcion para ver de manera grafica la popularidad
 void imprimir_barra(int valor, int maximo) {
     int ancho  = 40;
     int llenas = (maximo > 0) ? (valor * ancho) / maximo : 0;
@@ -131,6 +131,8 @@ void imprimir_barra(int valor, int maximo) {
         printf(i < llenas ? "#" : " ");
     printf("]");
 }
+
+
 int buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre) {
     int i;
 // Busca si el dia existe
@@ -139,7 +141,7 @@ int buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre) {
             return i;
     }
 // Crea el dia nuevo
-   strncpy(dias[*n_dias].nombre, nombre, MAX_CAMPO - 1); //MAX CAMPO-1 para dejar un espacio al final
+   strncpy(dias[*n_dias].nombre, nombre, MAX_CAMPO - 1); //	MAX CAMPO-1 para dejar un espacio al final
     dias[*n_dias].nombre[MAX_CAMPO - 1] = '\0'; // El espacio de antes lo cubre cerrando el array
     dias[*n_dias].ocupadas_total         = 0;
     dias[*n_dias].registros              = 0;
@@ -152,23 +154,124 @@ int main() {
 
     FILE *fp = fopen("dataset.csv", "r");
 
-    // Array principal
-     Actividad *actividades = malloc(MAX_ACTIVIDADES * sizeof(actividades));
+    // Array principal, MEMORIA DINAMICA
+    /*Actividad *actividades = malloc(MAX_ACTIVIDADES * sizeof(*a	ctividades));
    	 if (actividades == NULL) {
         printf("Error: memoria no disponible\n");
 		 return -1;
-    }
-    free(actividades);
+    } */static Actividad actividades[MAX_ACTIVIDADES];
+
     int n_actividades = 0;
 
 
-    /* Array auxiliar de dias */
+    // Array auxiliar de dias
     DiaSemana dias[MAX_DIAS];
     int n_dias = 0;
 
     char linea[MAX_LINEA];
     int  i;
 
+// Comprobar que no este vacio
+ char *resultado;
+resultado = fgets(linea, sizeof(linea), fp);
 
-  return 0;
+if (resultado == NULL) {
+    fprintf(stderr, "Error: archivo vacio.\n");
+    fclose(fp);
+    return 1;
+}
+
+
+ int error = 0;
+    while (fgets(linea, sizeof(linea), fp) && n_actividades < MAX_ACTIVIDADES && error == 0) {
+        if (linea[0] != '\n' && linea[0] != '\r') {
+            Actividad a;  // variable temporal
+            if (cargar_actividad(linea, &a) != 0) {
+                actividades[n_actividades] = a;
+                n_actividades++;
+
+				// Utilizando la funcion de antes busca o crea el dia
+                int idx = buscar_o_crear_dia(dias, &n_dias, actividades[n_actividades - 1].dia_semana);
+                if (idx < 0) {
+                    error = 1;  // Frenar en caso de fallo (que devuelva negativo)
+                }
+				else {
+				 	dias[idx].ocupadas_total += actividades[n_actividades - 1].ocupadas;
+					// Acumulador de todas las plazas ocupadas
+                    dias[idx].registros++;  // Contador de registros
+                }
+            }
+        }
+    }
+    fclose(fp);
+
+    if (error != 0) {
+        return 1;
+    }
+
+    if (n_dias == 0) {
+        fprintf(stderr, "No se encontraron datos validos.\n");
+        return 1;
+    }
+
+	// Usando la funcion de antes ordenar de forma descendente
+    orden_descendente(dias, n_dias);
+
+    // Calcular totales
+    int ocupadas_max    = dias[0].ocupadas_total;
+    int ocupadas_global = 0;
+    for (i = 0; i < n_dias; i++)
+        ocupadas_global += dias[i].ocupadas_total; //Acumulador de todas las ocupadas
+
+    //SALIDA
+    printf("\n");
+    printf("==========================================================\n");
+    printf("      ANALISIS DE POPULARIDAD POR DIA DE SEMANA\n");
+    printf("==========================================================\n\n");
+
+    printf("  Actividades leidas : %d\n",   n_actividades);
+    printf("  Dias distintos     : %d\n\n", n_dias);
+
+    printf("  %10s  %11s  %11s 	 %7s  %40s\n",
+           "DIA", "PLAZAS OC.", "ACTIVIDADES", "% TOTAL", "BARRA DE POPULARIDAD");
+    printf("  ---------------------------------------------------------------------------\n");
+
+    for (i = 0; i < n_dias; i++) {
+        // Porcentaje con 1 decimal: multiplicamos x1000 para no tener que usar float
+        int pct_x10;
+
+		if (ocupadas_global > 0) {
+   		 pct_x10 = (dias[i].ocupadas_total * 1000) / ocupadas_global;
+		} else {
+    	pct_x10 = 0;
+		}
+
+        printf("  %10s  %11d  %11d	  %3d.%d%%  ",
+               dias[i].nombre,
+               dias[i].ocupadas_total,
+               dias[i].registros,
+               pct_x10 / 10,
+               pct_x10 % 10);
+
+        imprimir_barra(dias[i].ocupadas_total, ocupadas_max);
+        printf("\n");
+    }
+
+    printf("  ---------------------------------------------------------------------------\n");
+    printf("  %10s  %11d  %11d	  100.0%%\n",
+           "TOTAL", ocupadas_global, n_actividades);
+
+    // Resumen final con lo mas popular
+    int top_pct_x10 = (ocupadas_global > 0)
+                      ? (dias[0].ocupadas_total * 1000) / ocupadas_global : 0;
+
+ printf("  ---------------------------------------------------------------------------\n\n");
+    printf("     DIA MAS POPULAR : %s\n",  dias[0].nombre);
+    printf("     Plazas ocupadas : %d\n",  dias[0].ocupadas_total);
+    printf("     Registros       : %d\n",  dias[0].registros);
+    printf("     Porcentaje      : %d.%d%% del total de ocupacion\n\n",
+           top_pct_x10 / 10, top_pct_x10 % 10);
+
+//	free(actividades);
+    return 0;
 }
