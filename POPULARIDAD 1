@@ -4,6 +4,7 @@
   */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define MAX_ACTIVIDADES 5100
 #define MAX_CAMPO        64
@@ -129,4 +130,45 @@ void imprimir_barra(int valor, int maximo) {
     for (i = 0; i < ancho; i++)
         printf(i < llenas ? "#" : " ");
     printf("]");
+}
+int buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre) {
+    int i;
+// Busca si el dia existe
+    for (i = 0; i < *n_dias; i++) {
+        if (strcmp(dias[i].nombre, nombre) == 0)
+            return i;
+    }
+// Crea el dia nuevo
+   strncpy(dias[*n_dias].nombre, nombre, MAX_CAMPO - 1); //MAX CAMPO-1 para dejar un espacio al final
+    dias[*n_dias].nombre[MAX_CAMPO - 1] = '\0'; // El espacio de antes lo cubre cerrando el array
+    dias[*n_dias].ocupadas_total         = 0;
+    dias[*n_dias].registros              = 0;
+    return (*n_dias)++; // Va incrementando para pasar al siguiente dia
+}
+
+
+// MAIN
+int main() {
+
+    FILE *fp = fopen("dataset.csv", "r");
+
+    // Array principal
+     Actividad *actividades = malloc(MAX_ACTIVIDADES * sizeof(actividades));
+   	 if (actividades == NULL) {
+        printf("Error: memoria no disponible\n");
+		 return -1;
+    }
+    free(actividades);
+    int n_actividades = 0;
+
+
+    /* Array auxiliar de dias */
+    DiaSemana dias[MAX_DIAS];
+    int n_dias = 0;
+
+    char linea[MAX_LINEA];
+    int  i;
+
+
+  return 0;
 }
