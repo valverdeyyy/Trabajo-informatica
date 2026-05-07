@@ -128,9 +128,7 @@ int main() {
         scanf(" %s", busca_centro);
         printf("\n   Horarios en centros que coinciden con '%s':\n", busca_centro);
         int m = 0;
-        printf("\n   Horarios en centros que coinciden con '%s':\n", busca_centro);
         int longitud_busqueda = strlen(busca_centro); // Cuanto mide lo que busco
-
         while (m < total_leidas) {
             int hallado = 0; // 0 = Falso, 1 = Verdadero
             int i = 0;
