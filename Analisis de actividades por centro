@@ -1,0 +1,180 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+
+#define MAX_ACTIVIDADES 5100
+#define MAX_CAMPO        64
+#define MAX_CENTROS      50
+#define MAX_LINEA       1024 // Un poco mas grande por si acaso
+
+// Estructura para cada fila del csv
+typedef struct {
+    char dia_semana[MAX_CAMPO];
+    char hora_inicio[MAX_CAMPO];
+    char actividad_base[MAX_CAMPO];
+    char centro[MAX_CAMPO];
+    int  ocupadas;
+} Actividad;
+
+// Estructura para el resumen de cada centro
+typedef struct {
+    char nombre[MAX_CAMPO];
+    char dia_top[MAX_CAMPO];
+    char actividad_top[MAX_CAMPO];
+    int  max_ocupacion; // Para saber que dia fue el mas lleno
+} InfoCentro;
+
+// Funcion para extraer datos adaptada a espacios
+void extraer_dato_real(const char *linea, int col, char *dest) {
+    int campo_actual = 0;
+    int i = 0;
+    int j = 0;
+
+    // Buscamos la columna saltando espacios
+    while (linea[i] != '\0' && campo_actual < col) {
+        if (linea[i] == ' ' || linea[i] == '\t') {
+            campo_actual++;
+            // Saltamos espacios seguidos si los hay
+            while (linea[i+1] == ' ' || linea[i+1] == '\t') i++;
+        }
+        i++;
+    }
+
+    // Copiamos el contenido de la columna
+    while (linea[i] != '\0' && linea[i] != ' ' && linea[i] != '\t' && linea[i] != '\n' && j < MAX_CAMPO - 1) {
+        dest[j++] = linea[i++];
+    }
+    dest[j] = '\0';
+}
+
+int main() {
+    // Intentamos abrir el archivo
+    FILE *f = fopen("dataset.csv", "r");
+    if (f == NULL) {
+        printf("Error: No se encuentra 'dataset.csv'. Comprueba el nombre!\n");
+        return 1;
+    }
+
+    // Memoria dinamica
+    Actividad *datos = (Actividad*) malloc(MAX_ACTIVIDADES * sizeof(Actividad));
+    InfoCentro centros[MAX_CENTROS];
+    
+    int total_leidas = 0;
+    int n_centros = 0;
+    char buffer[MAX_LINEA];
+
+    fgets(buffer, MAX_LINEA, f);
+
+    // Bucle de lectura 
+    while (total_leidas < MAX_ACTIVIDADES && fgets(buffer, MAX_LINEA, f) != NULL) {
+        char aux_ocupadas[MAX_CAMPO];
+
+        // Segun tu dataset: col 3 es dia_semana, 4 hora_inicio, 6 actividad, 8 centro, 10 ocupadas
+        extraer_dato_real(buffer, 3, datos[total_leidas].dia_semana);
+        extraer_dato_real(buffer, 4, datos[total_leidas].hora_inicio);
+        extraer_dato_real(buffer, 6, datos[total_leidas].actividad_base);
+        extraer_dato_real(buffer, 8, datos[total_leidas].centro);
+        extraer_dato_real(buffer, 10, aux_ocupadas);
+        datos[total_leidas].ocupadas = atoi(aux_ocupadas);
+
+        int idx_centro = -1;
+        int c = 0;
+        // Busqueda manual
+        while (c < n_centros && idx_centro == -1) {
+            if (strcmp(centros[c].nombre, datos[total_leidas].centro) == 0) {
+                idx_centro = c;
+            }
+            c++;
+        }
+
+        // Si es un centro nuevo lo añadimos a la lista de conocidos
+        if (idx_centro == -1 && n_centros < MAX_CENTROS) {
+            idx_centro = n_centros;
+            strcpy(centros[idx_centro].nombre, datos[total_leidas].centro);
+            centros[idx_centro].max_ocupacion = -1; // Empezamos desde abajo
+            n_centros++;
+        }
+
+        // Si tenemos el centro actualizamos sus records
+        if (idx_centro != -1) {
+            // Si la fila actual tiene mas gente que el record del centro, guardamos los datos
+            if (datos[total_leidas].ocupadas >= centros[idx_centro].max_ocupacion) {
+                centros[idx_centro].max_ocupacion = datos[total_leidas].ocupadas;
+                strcpy(centros[idx_centro].dia_top, datos[total_leidas].dia_semana);
+                strcpy(centros[idx_centro].actividad_top, datos[total_leidas].actividad_base);
+            }
+        }
+        total_leidas++;
+    }
+    fclose(f);
+
+    if (total_leidas > 0) {
+        printf("\n   ANALISIS DE ACTIVIDAD POR CENTRO \n");
+        printf("   ------------------------------------------------------------\n");
+        printf("   %-22s | %-12s | %s\n", "CENTRO", "DIA MAS ACT.", "ACTIVIDAD TOP");
+        printf("   ------------------------------------------------------------\n");
+
+        int k = 0;
+        while (k < n_centros) {
+            printf("   %-22s | %-12s | %s\n", 
+                   centros[k].nombre, centros[k].dia_top, centros[k].actividad_top);
+            k++;
+        }
+
+        // Buscar horarios
+        char busca_centro[MAX_CAMPO];
+        printf("\n   De que centro quieres ver los horarios?: ");
+        scanf(" %s", busca_centro);
+        printf("\n   Horarios en centros que coinciden con '%s':\n", busca_centro);
+        int m = 0;
+        printf("\n   Horarios en centros que coinciden con '%s':\n", busca_centro);
+        int longitud_busqueda = strlen(busca_centro); // Cuanto mide lo que busco
+
+        while (m < total_leidas) {
+            int hallado = 0; // 0 = Falso, 1 = Verdadero
+            int i = 0;
+            
+            // Recorremos el nombre del centro letra a letra
+            // Solo buscamos si el nombre del centro es mas largo o igual que lo buscado
+            while (datos[m].centro[i] != '\0' && hallado == 0) {
+                
+                // Si la letra actual coincide con la primera de la busqueda...
+                if (datos[m].centro[i] == busca_centro[0]) {
+                    int j = 0;
+                    int coincide_segmento = 1; // Suponemos que si hasta que falle
+                    
+                    // Comprobamos si las siguientes letras tambien coinciden
+                    while (j < longitud_busqueda && coincide_segmento == 1) {
+                        // Si nos salimos del nombre o una letra es distinta, falla
+                        if (datos[m].centro[i + j] == '\0' || 
+                            datos[m].centro[i + j] != busca_centro[j]) {
+                            coincide_segmento = 0;
+                        }
+                        j++;
+                    }
+                    
+                    // Si el segmento ha coincidido entero, hemos encontrado el centro
+                    if (coincide_segmento == 1) {
+                        hallado = 1;
+                    }
+                }
+                i++;
+            }
+
+            // Si al terminar de revisar este centro lo hemos hallado, imprimimos
+            if (hallado == 1) {
+                printf("   > %-10s %s -> %s\n", 
+                       datos[m].dia_semana, 
+                       datos[m].hora_inicio, 
+                       datos[m].actividad_base);
+            }
+            m++;
+        }
+    } else {
+        printf("Ops! No se leyo nada. Asegurate de que 'dataset.csv' no este vacio.\n");
+    }
+
+    free(datos); // Limpieza de memoria
+    return 0;
+}
