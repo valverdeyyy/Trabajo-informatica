@@ -1,7 +1,5 @@
-/* Lee dataset.csv, carga cada fila en un array de structs Actividad,
-  determina que dia de la semana tiene mayor popularidad (suma de
-  plazas ocupadas) y muestra los días ordenados de mayor a menor.
-  */
+// Parte de arriba a la derecha del diagrama de flujo, la primera de las 5
+  
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
