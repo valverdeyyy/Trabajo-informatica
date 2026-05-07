@@ -25,6 +25,74 @@ typedef struct {
     int  max_ocupacion; // Para saber que dia fue el mas lleno
 } InfoCentro;
 
+// Idea extraida del ejercicio del parcial
+char palindroma_caracter(char c) {
+    char resultado = c;
+
+  if (c == '_') {
+        resultado = ' ';
+    } else if (c >= 'A' && c <= 'Z') {
+        resultado = (c + 32);
+}
+return resultado;
+}
+
+void palindroma_string(const char *original, char *pldm, int max) {
+    int i = 0, j = 0;
+    while (original[i] != '\0' && j < max - 1) {
+        pldm[j] = palindroma_caracter(original[i]);
+        i++;
+        j++;
+    }
+    pldm[j] = '\0';
+}
+
+int palindroma(const char *texto, const char *busqueda) {
+    char texto_norm[MAX_CAMPO];
+    char busca_norm[MAX_CAMPO];
+    palindroma_string(texto,    texto_norm, MAX_CAMPO);
+    palindroma_string(busqueda, busca_norm, MAX_CAMPO);
+
+    int len = (int)strlen(busca_norm);
+    int encontrado = 0;
+    int i = 0;
+
+    while (texto_norm[i] != '\0' && encontrado == 0) {
+        if (texto_norm[i] == busca_norm[0]) {
+            int j = 0;
+            int coincide = 1;
+            while (j < len && coincide == 1) {
+                if (texto_norm[i + j] == '\0' ||
+                    texto_norm[i + j] != busca_norm[j]) {
+                    coincide = 0;
+                }
+                j++;
+            }
+            if (coincide == 1) {
+                encontrado = 1;
+            }
+        }
+        i++;
+    }
+    return encontrado;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Funcion para extraer datos adaptada a espacios
 void extraer_dato_real(const char *linea, int col, char *dest) {
     int campo_actual = 0;
@@ -52,7 +120,7 @@ int main() {
     // Intentamos abrir el archivo
     FILE *f = fopen("dataset.csv", "r");
     if (f == NULL) {
-        printf("Error: No se encuentra 'dataset.csv'. Comprueba el nombre\n");
+        printf("Error: No se encuentra 'dataset.csv'. Comprueba el nombre!\n");
         return 1;
     }
 
@@ -127,48 +195,21 @@ int main() {
         printf("\n   De que centro quieres ver los horarios?: ");
         scanf(" %s", busca_centro);
         printf("\n   Horarios en centros que coinciden con '%s':\n", busca_centro);
+        
         int m = 0;
-        int longitud_busqueda = strlen(busca_centro); // Cuanto mide lo que busco
-        while (m < total_leidas) {
-            int hallado = 0; // 0 = Falso, 1 = Verdadero
-            int i = 0;
-            
-            // Recorremos el nombre del centro letra a letra
-            // Solo buscamos si el nombre del centro es mas largo o igual que lo buscado
-            while (datos[m].centro[i] != '\0' && hallado == 0) {
-                
-                // Si la letra actual coincide con la primera de la busqueda...
-                if (datos[m].centro[i] == busca_centro[0]) {
-                    int j = 0;
-                    int coincide_segmento = 1; // Suponemos que si hasta que falle
-                    
-                    // Comprobamos si las siguientes letras tambien coinciden
-                    while (j < longitud_busqueda && coincide_segmento == 1) {
-                        // Si nos salimos del nombre o una letra es distinta, falla
-                        if (datos[m].centro[i + j] == '\0' || 
-                            datos[m].centro[i + j] != busca_centro[j]) {
-                            coincide_segmento = 0;
-                        }
-                        j++;
-                    }
-                    
-                    // Si el segmento ha coincidido entero, hemos encontrado el centro
-                    if (coincide_segmento == 1) {
-                        hallado = 1;
-                    }
-                }
-                i++;
-            }
-
-            // Si al terminar de revisar este centro lo hemos hallado, imprimimos
-            if (hallado == 1) {
-                printf("   > %-10s %s -> %s\n", 
-                       datos[m].dia_semana, 
-                       datos[m].hora_inicio, 
-                       datos[m].actividad_base);
-            }
-            m++;
-        }
+int encontrado_alguno = 0;
+while (m < total_leidas) {
+    if (palindroma(datos[m].centro, busca_centro) == 1) {
+        printf("   > %-10s %s -> %s\n",
+               datos[m].dia_semana, datos[m].hora_inicio, datos[m].actividad_base);
+        encontrado_alguno = 1;
+    }
+    m++;
+}
+if (encontrado_alguno == 0) {
+    printf("   No se encontraron resultados para '%s'.\n", busca_centro);
+}
+        
     } else {
         printf("Error, archivo vacio.\n");
     }
