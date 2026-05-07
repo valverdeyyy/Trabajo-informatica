@@ -170,7 +170,7 @@ int main() {
             m++;
         }
     } else {
-        printf("Ops! No se leyo nada. Asegurate de que 'dataset.csv' no este vacio.\n");
+        printf("Error, archivo vacio.\n");
     }
 
     free(datos); // Limpieza de memoria
