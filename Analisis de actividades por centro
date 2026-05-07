@@ -52,7 +52,7 @@ int main() {
     // Intentamos abrir el archivo
     FILE *f = fopen("dataset.csv", "r");
     if (f == NULL) {
-        printf("Error: No se encuentra 'dataset.csv'. Comprueba el nombre!\n");
+        printf("Error: No se encuentra 'dataset.csv'. Comprueba el nombre\n");
         return 1;
     }
 
