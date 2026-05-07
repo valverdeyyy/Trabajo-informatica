@@ -71,6 +71,9 @@ int  cargar_csv(const char *ruta);
 int  login();
 int  recomendar();
 int  es_util_recomendacion();
+int  buscar_recomendaciones(const char *hora, const char *actividad, const char *centro);
+void leer_linea(char *destino, int tamano);
+int  leer_entero();
 
 /* Bloque VERDE — Ordenar actividades */
 int  menu_ordenar();
@@ -144,33 +147,119 @@ int cargar_csv(const char *ruta) {
 /* ================================================================== */
 /* 7. BLOQUE ROJO — Login y recomendación                              */
 /* ================================================================== */
+
+/* Lee una línea del teclado eliminando el salto de línea final.
+   Si el usuario solo pulsa Enter, devuelve cadena vacía. */
+void leer_linea(char *destino, int tamano) {
+    if (fgets(destino, tamano, stdin) != NULL) {
+        destino[strcspn(destino, "\n")] = '\0';
+    } else {
+        destino[0] = '\0';
+    }
+}
+
+/* Lee un entero desde stdin (más robusto que scanf) */
+int leer_entero() {
+    char buffer[MAX_CAMPO];
+    leer_linea(buffer, MAX_CAMPO);
+    int n = 0, signo = 1, i = 0;
+    if (buffer[0] == '-') { signo = -1; i = 1; }
+    while (buffer[i] >= '0' && buffer[i] <= '9') {
+        n = n * 10 + (buffer[i] - '0');
+        i++;
+    }
+    return n * signo;
+}
+
 int login() {
     printf("=== LOGIN ===\n");
     printf("Nombre de usuario: ");
-    scanf("%s", usuario_actual.nombre);
-    printf("Lugar preferido: ");
-    scanf("%s", usuario_actual.lugar);
-    printf("Horario disponible: ");
-    scanf("%s", usuario_actual.horario);
-    printf("Actividad que quieres realizar: ");
-    scanf("%s", usuario_actual.actividad_deseada);
+    leer_linea(usuario_actual.nombre, MAX_CAMPO);
+
+    printf("Lugar preferido (centro, en blanco para ignorar): ");
+    leer_linea(usuario_actual.lugar, MAX_CAMPO);
+
+    printf("Horario disponible (ej. 09:00, en blanco para ignorar): ");
+    leer_linea(usuario_actual.horario, MAX_CAMPO);
+
+    printf("Actividad que quieres realizar (en blanco para ignorar): ");
+    leer_linea(usuario_actual.actividad_deseada, MAX_CAMPO);
+
     printf("\nBienvenido, %s\n\n", usuario_actual.nombre);
     return 1;
 }
 
+/* Busca actividades en el array global que coincidan con los filtros.
+   Si un filtro está vacío ("") se ignora ese campo. */
+int buscar_recomendaciones(const char *hora, const char *actividad, const char *centro) {
+    int encontrados = 0;
+    int i;
+
+    for (i = 0; i < total; i++) {
+        int coincide_hora      = (hora[0]      == '\0') || (strcmp(actividades[i].hora_inicio,    hora)      == 0);
+        int coincide_actividad = (actividad[0] == '\0') || (strcmp(actividades[i].actividad_base, actividad) == 0);
+        int coincide_centro    = (centro[0]    == '\0') || (strcmp(actividades[i].centro,         centro)    == 0);
+
+        if (coincide_hora && coincide_actividad && coincide_centro) {
+            if (encontrados == 0) {
+                printf("\n  %-12s  %-30s  %-8s  %-8s  %-30s  %s\n",
+                       "DIA", "ACTIVIDAD", "INICIO", "FIN", "CENTRO", "LIBRES");
+                printf("  -------------------------------------------------------------------------------------------------------\n");
+            }
+            printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %d\n",
+                   actividades[i].dia_semana,
+                   actividades[i].actividad_base,
+                   actividades[i].hora_inicio,
+                   actividades[i].hora_fin,
+                   actividades[i].centro,
+                   actividades[i].libres);
+            encontrados++;
+        }
+    }
+    return encontrados;
+}
+
 int recomendar() {
-    /* TODO: integrar el código de quien hizo el bloque rojo.
-       Buscar en actividades[] una que coincida con el lugar, horario
-       y actividad deseada del usuario_actual y mostrarla. */
-    printf("[Aquí va la recomendación del usuario]\n");
-    return 1;
+    printf("\n==========================================================\n");
+    printf("         BUSCADOR DE ACTIVIDADES\n");
+    printf("==========================================================\n\n");
+    printf("  Buscando actividades segun los datos del login.\n");
+    printf("  (Si quieres cambiar algun criterio, escribelo; deja en\n");
+    printf("   blanco y pulsa Enter para usar el del login)\n\n");
+
+    char hora[MAX_CAMPO];
+    char actividad[MAX_CAMPO];
+    char centro[MAX_CAMPO];
+
+    printf("  Hora de inicio [%s]: ", usuario_actual.horario);
+    leer_linea(hora, MAX_CAMPO);
+    if (hora[0] == '\0') strcpy(hora, usuario_actual.horario);
+
+    printf("  Actividad      [%s]: ", usuario_actual.actividad_deseada);
+    leer_linea(actividad, MAX_CAMPO);
+    if (actividad[0] == '\0') strcpy(actividad, usuario_actual.actividad_deseada);
+
+    printf("  Centro         [%s]: ", usuario_actual.lugar);
+    leer_linea(centro, MAX_CAMPO);
+    if (centro[0] == '\0') strcpy(centro, usuario_actual.lugar);
+
+    int encontrados = buscar_recomendaciones(hora, actividad, centro);
+
+    if (encontrados == 0) {
+        printf("\n  No se encontraron actividades con esos criterios.\n");
+    } else {
+        printf("\n  Total encontradas: %d\n", encontrados);
+    }
+    printf("\n");
+
+    return encontrados;
 }
 
 int es_util_recomendacion() {
-    int respuesta;
-    printf("\n¿Es útil la recomendación? (1=Sí, 0=No): ");
-    scanf("%d", &respuesta);
-    return respuesta;
+    char respuesta[MAX_CAMPO];
+    printf("\n¿Es util la recomendacion? (s/n): ");
+    leer_linea(respuesta, MAX_CAMPO);
+    return (respuesta[0] == 's' || respuesta[0] == 'S');
 }
 
 /* ================================================================== */
@@ -186,7 +275,7 @@ int menu_ordenar() {
     printf("4) Por plazas libres (mayor a menor)\n");
     printf("0) Volver\n");
     printf("Elige una opcion: ");
-    scanf("%d", &opcion);
+    opcion = leer_entero();
 
     switch (opcion) {
         case 1: ordenar_por_lugar();     mostrar_actividades(total); break;
@@ -299,7 +388,7 @@ int mostrar_actividades(int n) {
 int flujo_elegir_actividad() {
     int indice;
     printf("Indica el numero de la actividad a realizar: ");
-    scanf("%d", &indice);
+    indice = leer_entero();
 
     if (indice < 0 || indice >= total) {
         printf("Indice no valido.\n");
@@ -487,7 +576,7 @@ int menu_estadisticas() {
     printf("5) Horarios de un centro\n");
     printf("0) Volver\n");
     printf("Elige una opcion: ");
-    scanf("%d", &opcion);
+    opcion = leer_entero();
 
     switch (opcion) {
         case 1: dia_mas_actividad_general();        break;
@@ -505,7 +594,6 @@ int menu_estadisticas() {
 /* 13. MENÚ PRINCIPAL                                                  */
 /* ================================================================== */
 int menu_principal() {
-    int opcion;
     printf("\n¿Que desea realizar?\n");
     printf("(1) Recomendacion personalizada\n");
     printf("(2) Ver estadisticas\n");
@@ -513,8 +601,7 @@ int menu_principal() {
     printf("(4) Elegir una actividad\n");
     printf("(0) Salir\n");
     printf("Elige una opcion: ");
-    scanf("%d", &opcion);
-    return opcion;
+    return leer_entero();
 }
 
 /* ================================================================== */
