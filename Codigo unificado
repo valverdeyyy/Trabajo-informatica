@@ -1,0 +1,14 @@
+// Incluimos todas las librerias usadas
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+// Definimos todas las funciones usadas
+
+#define MAX_ACTIVIDADES 5100
+#define MAX_CAMPO        64
+#define MAX_CENTROS      50
+#define MAX_LINEA       1024 
+#define MAX_DIAS          7
+#define EXITO  0
+#define ERROR  1
