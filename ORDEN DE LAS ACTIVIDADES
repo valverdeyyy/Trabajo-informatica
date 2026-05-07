@@ -54,7 +54,6 @@ int cargar_csv(const char *ruta) {
     }
 
     fclose(f);
-    printf("Se cargaron %d actividades.\n\n", total);
     return 1;
 }
 
