@@ -199,18 +199,18 @@ int buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre) {
 int main() {
 
 
- int opcion = 0;
+ char opcion = 'a';
     printf("\n¿Que analisis desea ver?\n");
     printf("  1. Dia con mas actividad\n");
     printf("  2. Actividades con mas popularidad\n");
     printf("  3. Analisis de actividades por centro\n");    
 
     // Entra mientras opcion no sea 1 ni 2 ni 3
-    while (opcion != 1 && opcion != 2 && opcion != 3) {
+    while (opcion != '1' && opcion != '2' && opcion != '3') {
         printf("Escriba 1, 2 o 3: ");
-        scanf("%d", &opcion);
+        scanf("%s", &opcion);
 
-        if (opcion != 1 && opcion != 2 && opcion != 3) {
+        if (opcion != '1' && opcion != '2' && opcion != '3') {
             printf("Opcion no valida. ");
         }
     }
@@ -283,7 +283,7 @@ if (resultado == NULL) {
     orden_descendente(dias, n_dias);
 
  // Primera opcion, popularidad por dias
-if(opcion == 1){
+if(opcion == '1'){
 
     // Calcular totales
     int ocupadas_max    = dias[0].ocupadas_total;
@@ -291,7 +291,6 @@ if(opcion == 1){
     for (i = 0; i < n_dias; i++)
         ocupadas_global += dias[i].ocupadas_total; //Acumulador de todas las ocupadas
 
-    //SALIDA
     printf("\n");
     printf("==========================================================\n");
     printf("      ANALISIS DE POPULARIDAD POR DIA DE SEMANA\n");
@@ -342,7 +341,7 @@ if(opcion == 1){
     
     
  // Segunda opcion, popularidd de actividades
-if (opcion == 2){
+if (opcion == '2'){
 
     DiaSemana acts[MAX_TIPOS_ACTIVIDAD];
     int  n_acts = 0; 
@@ -417,7 +416,7 @@ if (opcion == 2){
 }
 
 // Tercera opcion, analisis de las actividades por centro
-     if (opcion == 3) {
+     if (opcion == '3') {
 
         // Array de centros con su record de ocupacion
         InfoCentro centros[MAX_CENTROS];
