@@ -57,19 +57,22 @@ Actividad actividades[MAX_ACTIVIDADES];
 int total = 0;
 Usuario   usuario_actual;
 
-/* 5. DECLARACIONES ADELANTADAS                                        */
+// 5. DECLARACIONES ADELANTADAS
 // Carga del fichero
 int  cargar_csv(const char *ruta);
 
-//Login y recomendación
+// Login y recomendación
 int  login();
 int  recomendar();
 int  es_util_recomendacion();
 int  buscar_recomendaciones(const char *hora, const char *actividad, const char *centro);
 void leer_linea(char *destino, int tamano);
 int  leer_entero();
+int  normalizar_hora_a_minutos(const char *hora);
+int  horas_parecidas(const char *h1, const char *h2, int margen_min);
+int  cadenas_parecidas(const char *texto, const char *busqueda);
 
-// Bloque VERDE — Ordenar actividades
+// Ordenar actividades
 int  menu_ordenar();
 int  ordenar_por_lugar();
 int  ordenar_por_horario();
@@ -181,43 +184,129 @@ int login() {
     return 1;
 }
 
-// Busca actividades en el array global que coincidan con los filtros.
-// Si un filtro está vacío ("") se ignora ese campo.
-int buscar_recomendaciones(const char *hora, const char *actividad, const char *centro) {
-    int encontrados = 0;
-    int i;
+// Para poder comparar las horas
+int normalizar_hora_a_minutos(const char *hora) {
+    int h = 0, m = 0, i = 0;
 
-    for (i = 0; i < total; i++) {
-        int coincide_hora      = (hora[0] == '\0') || (strcmp(actividades[i].hora_inicio, hora) == 0);
-        int coincide_actividad = (actividad[0] == '\0') || (strcmp(actividades[i].actividad_base, actividad) == 0);
-        int coincide_centro    = (centro[0] == '\0') || (strcmp(actividades[i].centro, centro) == 0);
+    // Saltar espacios iniciales
+    while (hora[i] == ' ')
+	i++;
 
-        if (coincide_hora && coincide_actividad && coincide_centro) {
-            if (encontrados == 0) {
-                printf("\n  %-12s  %-30s  %-8s  %-8s  %-30s  %s\n",
-                       "DIA", "ACTIVIDAD", "INICIO", "FIN", "CENTRO", "LIBRES");
-                printf("  -------------------------------------------------------------------------------------------------------\n");
-            }
-            printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %d\n",
-                   actividades[i].dia_semana,
-                   actividades[i].actividad_base,
-                   actividades[i].hora_inicio,
-                   actividades[i].hora_fin,
-                   actividades[i].centro,
-                   actividades[i].libres);
-            encontrados++;
+    // Leer horas (dígitos antes del separador o fin)
+    while (hora[i] >= '0' && hora[i] <= '9') {
+        h = h * 10 + (hora[i] - '0');
+        i++;
+    }
+
+    // Si hay separador (':' o '.')
+    if (hora[i] == ':' || hora[i] == '.') {
+        i++;
+        while (hora[i] >= '0' && hora[i] <= '9') {
+            m = m * 10 + (hora[i] - '0');
+            i++;
         }
     }
-    return encontrados;
+    // Si no hay separador que 900 sea 9.00
+    else if (h >= 100) {
+        m = h % 100;
+        h = h / 100;
+    }
+
+    return h * 60 + m;
+}
+
+// Compara la hora introducida por el usuario con la csv para ver si es parecida y compararla
+int horas_parecidas(const char *h1, const char *h2, int margen_min) {
+    int resultado = 1;
+    if (h2[0] != '\0') {
+        int min1 = normalizar_hora_a_minutos(h1);
+        int min2 = normalizar_hora_a_minutos(h2);
+        int diff = min1 - min2;
+        if (diff < 0) diff = -diff;
+        resultado = (diff <= margen_min);
+    }
+    return resultado;
+}
+
+// La funcion palindroma esta más abajo por que se hizo en otro bloque en un principio
+int cadenas_parecidas(const char *texto, const char *busqueda) {
+    int resultado = 1;
+    if (busqueda[0] != '\0') {
+        resultado = palindroma(texto, busqueda);
+    }
+    return resultado;
+}
+
+// Busca actividades en el array global que coincidan con los filtros.
+int buscar_recomendaciones(const char *hora, const char *actividad, const char *centro) {
+    int encontrados_libres  = 0;
+    int encontrados_total   = 0;
+    int i;
+
+    // Primera pasada: mostrar actividades con plazas libres
+    printf("\n  %-10s  %-30s  %-5s  %-5s  %-30s  %5s  %5s\n",
+           "DIA", "ACTIVIDAD", "INICIO", "FIN", "CENTRO", "LIBRES", "OCUP.");
+    printf("  ---------------------------------------------------"
+           "------------------------------------------------------\n");
+
+    for (i = 0; i < total; i++) {
+        int ok_hora      = horas_parecidas(actividades[i].hora_inicio, hora, 60);
+        int ok_actividad = cadenas_parecidas(actividades[i].actividad_base, actividad);
+        int ok_centro    = cadenas_parecidas(actividades[i].centro, centro);
+
+        if (ok_hora && ok_actividad && ok_centro) {
+            encontrados_total++;
+            if (actividades[i].libres > 0) {
+                printf("  %-10s  %-30s  %-5s  %-5s  %-30s  %5d  %5d\n",
+                       actividades[i].dia_semana,
+                       actividades[i].actividad_base,
+                       actividades[i].hora_inicio,
+                       actividades[i].hora_fin,
+                       actividades[i].centro,
+                       actividades[i].libres,
+                       actividades[i].ocupadas);
+                encontrados_libres++;
+            }
+        }
+    }
+
+    // Si no hay ninguna con plazas libres, mostrar todas las coincidentes
+    if (encontrados_libres == 0 && encontrados_total > 0) {
+        printf("  (Sin plazas libres exactas; mostrando todas las coincidentes)\n\n");
+        printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %6s  %6s\n",
+               "DIA", "ACTIVIDAD", "INICIO", "FIN", "CENTRO", "LIBRES", "OCUP.");
+        printf("  ---------------------------------------------------"
+               "------------------------------------------------------\n");
+
+        for (i = 0; i < total; i++) {
+            int ok_hora      = horas_parecidas(actividades[i].hora_inicio, hora, 60);
+            int ok_actividad = cadenas_parecidas(actividades[i].actividad_base, actividad);
+            int ok_centro    = cadenas_parecidas(actividades[i].centro, centro);
+
+            if (ok_hora && ok_actividad && ok_centro) {
+                printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %6d  %6d\n",
+                       actividades[i].dia_semana,
+                       actividades[i].actividad_base,
+                       actividades[i].hora_inicio,
+                       actividades[i].hora_fin,
+                       actividades[i].centro,
+                       actividades[i].libres,
+                       actividades[i].ocupadas);
+            }
+        }
+    }
+
+    return encontrados_total;
 }
 
 int recomendar() {
     printf("\n==========================================================\n");
-    printf("         BUSCADOR DE ACTIVIDADES\n");
+    printf("             BUSCADOR DE ACTIVIDADES\n");
     printf("==========================================================\n\n");
     printf("  Buscando actividades segun los datos del login.\n");
-    printf("  (Si quieres cambiar algun criterio, escribelo; deja en\n");
-    printf("   blanco y pulsa Enter para usar el del login)\n\n");
+    printf("  Puedes escribir el valor o pulsar Enter para usar el del login.\n");
+    printf("  El nombre de actividad y centro puede ser parcial,\n");
+    printf("  con espacios o guiones bajos, en mayusculas o minusculas.\n\n");
 
     char hora[MAX_CAMPO];
     char actividad[MAX_CAMPO];
@@ -235,12 +324,20 @@ int recomendar() {
     leer_linea(centro, MAX_CAMPO);
     if (centro[0] == '\0') strcpy(centro, usuario_actual.lugar);
 
+    printf("\n  Filtros aplicados:\n");
+    if (hora[0]      != '\0') printf("    Hora      : %s (margen +/-60 min)\n", hora);
+    if (actividad[0] != '\0') printf("    Actividad : contiene '%s'\n", actividad);
+    if (centro[0]    != '\0') printf("    Centro    : contiene '%s'\n", centro);
+    if (hora[0] == '\0' && actividad[0] == '\0' && centro[0] == '\0')
+        printf("    (ningun filtro activo, mostrando todas)\n");
+
     int encontrados = buscar_recomendaciones(hora, actividad, centro);
 
     if (encontrados == 0) {
         printf("\n  No se encontraron actividades con esos criterios.\n");
+        printf("  Sugerencia: prueba con un nombre mas corto o deja algun campo en blanco.\n");
     } else {
-        printf("\n  Total encontradas: %d\n", encontrados);
+        printf("\n  Total coincidencias: %d\n", encontrados);
     }
     printf("\n");
 
