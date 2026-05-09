@@ -1,12 +1,8 @@
-/* ================================================================== */
-/* 1. INCLUDES                                                         */
-/* ================================================================== */
+// 1. INCLUDES, librerias utilizadas
 #include <stdio.h>
 #include <string.h>
 
-/* ================================================================== */
-/* 2. CONSTANTES                                                       */
-/* ================================================================== */
+// 2. CONSTANTES
 #define MAX_ACTIVIDADES 5100
 #define MAX_CAMPO       64
 #define MAX_USUARIOS    100
@@ -14,9 +10,7 @@
 #define MAX_TIPOS_ACTIVIDAD 256
 #define MAX_CENTROS     50
 
-/* ================================================================== */
-/* 3. ESTRUCTURAS                                                      */
-/* ================================================================== */
+// 3. ESTRUCTURAS
 typedef struct {
     int  anio;
     int  mes;
@@ -57,18 +51,14 @@ typedef struct {
     int  max_ocupacion;
 } InfoCentro;
 
-/* ================================================================== */
-/* 4. VARIABLES GLOBALES                                               */
-/* ================================================================== */
+
+// 4. VARIABLES GLOBALES
 Actividad actividades[MAX_ACTIVIDADES];
 int       total = 0;
 Usuario   usuario_actual;
 
-/* ================================================================== */
 /* 5. DECLARACIONES ADELANTADAS                                        */
-/* ================================================================== */
-
-/* Carga del fichero */
+// Carga del fichero
 int  cargar_csv(const char *ruta);
 
 /* Bloque ROJO — Login y recomendación */
@@ -112,9 +102,7 @@ int  palindroma(const char *texto, const char *busqueda);
 int  menu_principal();
 int  menu_estadisticas();
 
-/* ================================================================== */
-/* 6. CARGA DEL FICHERO                                                */
-/* ================================================================== */
+// 6. CARGA DEL FICHERO
 int cargar_csv(const char *ruta) {
     FILE *f = fopen(ruta, "r");
     if (f == NULL) {
@@ -151,10 +139,7 @@ int cargar_csv(const char *ruta) {
     return 1;
 }
 
-/* ================================================================== */
-/* 7. BLOQUE ROJO — Login y recomendación                              */
-/* ================================================================== */
-
+// 7. BLOQUE ROJO — Login y recomendación
 /* Lee una línea del teclado eliminando el salto de línea final.
    Si el usuario solo pulsa Enter, devuelve cadena vacía. */
 void leer_linea(char *destino, int tamano) {
@@ -269,9 +254,9 @@ int es_util_recomendacion() {
     return (respuesta[0] == 's' || respuesta[0] == 'S');
 }
 
-/* ================================================================== */
-/* 8. BLOQUE VERDE — Ordenar actividades                               */
-/* ================================================================== */
+
+// 8. BLOQUE VERDE — Ordenar actividades
+
 int menu_ordenar() {
     int opcion;
     // Se crea un menu para que el usuario elija lo que quiere
@@ -396,9 +381,7 @@ int mostrar_actividades(int n) {
     return n;
 }
 
-/* ================================================================== */
-/* 9. BLOQUE NARANJA — Elegir actividad / alternativas                 */
-/* ================================================================== */
+// 9. BLOQUE NARANJA — Elegir actividad / alternativas
 int flujo_elegir_actividad() {
     int indice;
     printf("Indica el numero de la actividad a realizar: ");
@@ -430,10 +413,7 @@ int buscar_alternativas() {
     return 1;
 }
 
-/* ================================================================== */
-/* 10. BLOQUE MORADO — Estadísticas generales                          */
-/* ================================================================== */
-
+// 10. BLOQUE MORADO — Estadísticas generales
 /* Ordena el array de días de mayor a menor por ocupación */
 void orden_descendente(DiaSemana dias[], int n) {
     int i, j;
@@ -622,9 +602,7 @@ int actividades_mas_populares_general() {
     return n_acts;
 }
 
-/* ================================================================== */
-/* 11. BLOQUE LIMA — Estadísticas por centro                           */
-/* ================================================================== */
+// 11. BLOQUE LIMA — Estadísticas por centro
 
 /* Convierte un carácter para hacer búsquedas flexibles:
    - Mayúsculas a minúsculas
@@ -792,9 +770,7 @@ int horarios_de_centro() {
     return encontrados;
 }
 
-/* ================================================================== */
 /* 12. MENÚ DE ESTADÍSTICAS (morado + lima)                            */
-/* ================================================================== */
 int menu_estadisticas() {
     int opcion;
     printf("=== ESTADÍSTICAS ===\n");
@@ -823,9 +799,7 @@ int menu_estadisticas() {
     return opcion;
 }
 
-/* ================================================================== */
-/* 13. MENÚ PRINCIPAL                                                  */
-/* ================================================================== */
+// 13. MENÚ PRINCIPAL
 int menu_principal() {
     printf("\n¿Que desea realizar?\n");
     printf("(1) Recomendacion personalizada\n");
@@ -837,9 +811,8 @@ int menu_principal() {
     return leer_entero();
 }
 
-/* ================================================================== */
-/* 14. MAIN — Sigue el diagrama de flujo                               */
-/* ================================================================== */
+
+// 14. MAIN — Sigue el diagrama de flujo
 int main(int argc, char *argv[]) {
     const char *ruta = "dataset.csv";
     if (argc >= 2) ruta = argv[1];
