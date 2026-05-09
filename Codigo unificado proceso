@@ -54,14 +54,14 @@ typedef struct {
 
 // 4. VARIABLES GLOBALES
 Actividad actividades[MAX_ACTIVIDADES];
-int       total = 0;
+int total = 0;
 Usuario   usuario_actual;
 
 /* 5. DECLARACIONES ADELANTADAS                                        */
 // Carga del fichero
 int  cargar_csv(const char *ruta);
 
-/* Bloque ROJO — Login y recomendación */
+//Login y recomendación
 int  login();
 int  recomendar();
 int  es_util_recomendacion();
@@ -69,7 +69,7 @@ int  buscar_recomendaciones(const char *hora, const char *actividad, const char 
 void leer_linea(char *destino, int tamano);
 int  leer_entero();
 
-/* Bloque VERDE — Ordenar actividades */
+// Bloque VERDE — Ordenar actividades
 int  menu_ordenar();
 int  ordenar_por_lugar();
 int  ordenar_por_horario();
@@ -78,19 +78,19 @@ int  ordenar_por_libres();
 int  hora_a_minutos(const char *hora);
 int  mostrar_actividades(int n);
 
-/* Bloque NARANJA — Actividades alternativas */
+// Actividades alternativas
 int  flujo_elegir_actividad();
 int  esta_completa(int indice);
 int  buscar_alternativas();
 
-/* Bloque MORADO — Estadísticas generales */
+// Estadísticas generales
 int  dia_mas_actividad_general();
 int  actividades_mas_populares_general();
 void orden_descendente(DiaSemana dias[], int n);
 void imprimir_barra(int valor, int maximo);
 int  buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre);
 
-/* Bloque LIMA — Estadísticas por centro */
+// Estadísticas por centro
 int  dia_mas_actividad_por_centro();
 int  actividades_populares_por_centro();
 int  horarios_de_centro();
@@ -98,7 +98,7 @@ char palindroma_caracter(char c);
 void palindroma_string(const char *original, char *destino, int max);
 int  palindroma(const char *texto, const char *busqueda);
 
-/* Menús */
+// Menús
 int  menu_principal();
 int  menu_estadisticas();
 
@@ -139,7 +139,7 @@ int cargar_csv(const char *ruta) {
     return 1;
 }
 
-// 7. BLOQUE ROJO — Login y recomendación
+// 7. Login y recomendación
 /* Lee una línea del teclado eliminando el salto de línea final.
    Si el usuario solo pulsa Enter, devuelve cadena vacía. */
 void leer_linea(char *destino, int tamano) {
@@ -150,7 +150,7 @@ void leer_linea(char *destino, int tamano) {
     }
 }
 
-/* Lee un entero desde stdin (más robusto que scanf) */
+// Cambia un char a un int
 int leer_entero() {
     char buffer[MAX_CAMPO];
     leer_linea(buffer, MAX_CAMPO);
@@ -188,9 +188,9 @@ int buscar_recomendaciones(const char *hora, const char *actividad, const char *
     int i;
 
     for (i = 0; i < total; i++) {
-        int coincide_hora      = (hora[0]      == '\0') || (strcmp(actividades[i].hora_inicio,    hora)      == 0);
+        int coincide_hora      = (hora[0] == '\0') || (strcmp(actividades[i].hora_inicio, hora) == 0);
         int coincide_actividad = (actividad[0] == '\0') || (strcmp(actividades[i].actividad_base, actividad) == 0);
-        int coincide_centro    = (centro[0]    == '\0') || (strcmp(actividades[i].centro,         centro)    == 0);
+        int coincide_centro    = (centro[0] == '\0') || (strcmp(actividades[i].centro, centro) == 0);
 
         if (coincide_hora && coincide_actividad && coincide_centro) {
             if (encontrados == 0) {
@@ -255,7 +255,7 @@ int es_util_recomendacion() {
 }
 
 
-// 8. BLOQUE VERDE — Ordenar actividades
+// 8. Ordenar actividades
 int menu_ordenar() {
     int opcion;
     // Se crea un menu para que el usuario elija lo que quiere
@@ -267,7 +267,7 @@ int menu_ordenar() {
     printf("0) Volver\n");
     printf("Elige una opcion: ");
     opcion = leer_entero();
-    // Se ejecuta lo que ha escogido el usuario
+
     if (opcion == 1) {
         ordenar_por_lugar();
         mostrar_actividades(total);
@@ -285,7 +285,7 @@ int menu_ordenar() {
     }
     return opcion;
 }
-// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades alfabeticamente según la columna centro
+// Usando strcmp y tres variables i, j, e intercambios (aux) va ordenando las actividades alfabeticamente según la columna centro
 int ordenar_por_lugar() {
     int i, j, intercambios = 0;
     Actividad temp;
@@ -380,7 +380,7 @@ int mostrar_actividades(int n) {
     return n;
 }
 
-// 9. BLOQUE NARANJA — Elegir actividad / alternativas
+// 9. Elegir actividad / alternativas
 int flujo_elegir_actividad() {
     int indice;
     printf("Indica el numero de la actividad a realizar: ");
@@ -406,13 +406,12 @@ int esta_completa(int indice) {
 }
 
 int buscar_alternativas() {
-    /* TODO: integrar el código del bloque naranja.
-       Mostrar actividades parecidas con plazas libres. */
+      // Mostrar actividades parecidas con plazas libres.
     printf("[Aqui van las actividades alternativas]\n");
     return 1;
 }
 
-// 10. BLOQUE MORADO — Estadisticas generales
+// 10. Estadisticas generales
 // Ordena el array de días de mayor a menor por ocupación
 void orden_descendente(DiaSemana dias[], int n) {
     int i, j;
@@ -420,15 +419,15 @@ void orden_descendente(DiaSemana dias[], int n) {
     for (i = 0; i < n - 1; i++) {
         for (j = 0; j < n - 1 - i; j++) {
             if (dias[j].ocupadas_total < dias[j + 1].ocupadas_total) {
-                aux         = dias[j];
-                dias[j]     = dias[j + 1];
+                aux = dias[j];
+                dias[j] = dias[j + 1];
                 dias[j + 1] = aux;
             }
         }
     }
 }
 
-/* Dibuja una barra ASCII proporcional al valor */
+/* Dibuja una barra  proporcional al valor */
 void imprimir_barra(int valor, int maximo) {
     int ancho  = 40;
     int llenas = (maximo > 0) ? (valor * ancho) / maximo : 0;
@@ -489,9 +488,8 @@ int dia_mas_actividad_general() {
     printf("  Actividades leidas : %d\n",   total);
     printf("  Dias distintos     : %d\n\n", n_dias);
 
-    printf("  %10s  %11s  %11s   %7s  %s\n",
-           "DIA", "PLAZAS OC.", "ACTIVIDADES", "% TOTAL", "BARRA DE POPULARIDAD");
-    printf("  ---------------------------------------------------------------------------\n");
+    printf("  %10s  %10s  %10s 	 %5s \n",
+           "DIA", "PLAZAS OC.", "ACTIVIDADES", "% TOTAL");
 
     for (i = 0; i < n_dias; i++) {
         int pct_x10;
@@ -501,19 +499,17 @@ int dia_mas_actividad_general() {
             pct_x10 = 0;
         }
 
-        printf("  %10s  %11d  %11d    %3d.%d%%  ",
+        printf("  %10s  %10d  %10d    %5d.%d%%  ",
                dias[i].nombre,
                dias[i].ocupadas_total,
                dias[i].registros,
                pct_x10 / 10,
                pct_x10 % 10);
 
-        imprimir_barra(dias[i].ocupadas_total, ocupadas_max);
-        printf("\n");
     }
 
     printf("  ---------------------------------------------------------------------------\n");
-    printf("  %10s  %11d  %11d    100.0%%\n",
+    printf("  %10s  %10d  %10d    100.0%%\n",
            "TOTAL", ocupadas_global, total);
 
     int top_pct_x10 = (ocupadas_global > 0)
@@ -603,6 +599,7 @@ int actividades_mas_populares_general() {
 
 // 11. BLOQUE LIMA — Estadísticas por centro
 // Convierte un carácter para hacer búsquedas flexibles:
+// Funcion inspirada por el ejercicio del parcial
 char palindroma_caracter(char c) {
     char resultado = c;
     if (c == '_') {		// Guión bajo '_' a espacio ' '
@@ -624,12 +621,11 @@ void palindroma_string(const char *original, char *destino, int max) {
     destino[j] = '\0';
 }
 
-/* Devuelve 1 si 'busqueda' aparece dentro de 'texto', ignorando
-   mayúsculas/minúsculas y tratando '_' como espacio. */
+//Compara
 int palindroma(const char *texto, const char *busqueda) {
     char texto_norm[MAX_CAMPO];
     char busca_norm[MAX_CAMPO];
-    palindroma_string(texto,    texto_norm, MAX_CAMPO);
+    palindroma_string(texto, texto_norm, MAX_CAMPO);
     palindroma_string(busqueda, busca_norm, MAX_CAMPO);
 
     int len = strlen(busca_norm);
@@ -694,9 +690,9 @@ int dia_mas_actividad_por_centro() {
         if (idx_centro != -1) {
             if (actividades[i].ocupadas >= centros[idx_centro].max_ocupacion) {
                 centros[idx_centro].max_ocupacion = actividades[i].ocupadas;
-                strncpy(centros[idx_centro].dia_top,       actividades[i].dia_semana,     MAX_CAMPO - 1);
+                strncpy(centros[idx_centro].dia_top,actividades[i].dia_semana, MAX_CAMPO - 1);
                 strncpy(centros[idx_centro].actividad_top, actividades[i].actividad_base, MAX_CAMPO - 1);
-                centros[idx_centro].dia_top[MAX_CAMPO - 1]       = '\0';
+                centros[idx_centro].dia_top[MAX_CAMPO - 1] = '\0';
                 centros[idx_centro].actividad_top[MAX_CAMPO - 1] = '\0';
             }
         }
@@ -708,7 +704,7 @@ int dia_mas_actividad_por_centro() {
     printf("         ANALISIS DE ACTIVIDAD POR CENTRO\n");
     printf("==========================================================\n");
     printf("   %-30s | %-12s | %s\n", "CENTRO", "DIA MAS ACT.", "ACTIVIDAD TOP");
-    printf("   --------------------------------------------------------------------------\n");
+
 
     for (i = 0; i < n_centros; i++) {
         printf("   %-30s | %-12s | %s\n",
@@ -719,7 +715,7 @@ int dia_mas_actividad_por_centro() {
     return n_centros;
 }
 
-/* Igual que dia_mas_actividad_por_centro pero centrado en la actividad top */
+// Igual que dia_mas_actividad_por_centro pero centrado en la actividad top
 int actividades_populares_por_centro() {
     /* La lógica es la misma; reutilizamos la función. La tabla ya muestra
        la actividad top de cada centro. */
@@ -766,14 +762,14 @@ int horarios_de_centro() {
     return encontrados;
 }
 
-// 12. MENÚ DE ESTADÍSTICAS (morado + lima)
+// 12. MENÚ DE ESTADÍSTICAS
 int menu_estadisticas() {
     int opcion;
-    printf("=== ESTADÍSTICAS ===\n");
-    printf("1) Día con más actividad (general)\n");
-    printf("2) Actividades más populares (general)\n");
-    printf("3) Día con más actividad por centro\n");
-    printf("4) Actividades más populares por centro\n");
+    printf("=== ESTADISTICAS ===\n");
+    printf("1) Dia con mas actividad (general)\n");
+    printf("2) Actividades mas populares (general)\n");
+    printf("3) Dia con mas actividad por centro\n");
+    printf("4) Actividades mas populares por centro\n");
     printf("5) Horarios de un centro\n");
     printf("0) Volver\n");
     printf("Elige una opcion: ");
@@ -808,7 +804,7 @@ int menu_principal() {
 }
 
 
-// 14. MAIN — Sigue el diagrama de flujo
+// 14. MAIN
 int main(int argc, char *argv[]) {
     const char *ruta = "dataset.csv";
     if (argc >= 2) ruta = argv[1];
@@ -817,8 +813,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("Le presentamos la aplicacion para poder observar los datos\n");
-    printf("de las actividades fisicas de Madrid.\n\n");
+    printf("Le presentamos la aplicacion para poder observar los datos\n de las actividades fisicas de Madrid.\n\n");
 
     login();
 
@@ -827,7 +822,7 @@ int main(int argc, char *argv[]) {
         opcion = menu_principal();
 
         if (opcion == 1) {
-            /* Quiere recomendación → flujo rojo + naranja */
+            // Quiere recomendación
             recomendar();
             if (es_util_recomendacion()) {
                 flujo_elegir_actividad();
@@ -835,13 +830,13 @@ int main(int argc, char *argv[]) {
                 menu_ordenar();
             }
         } else if (opcion == 2) {
-            /* Ver estadísticas → flujo morado + lima */
+            // Ver estadísticas
             menu_estadisticas();
         } else if (opcion == 3) {
-            /* Ordenar actividades manualmente → flujo verde */
+            // Ordenar actividades manualmente
             menu_ordenar();
         } else if (opcion == 4) {
-            /* Elegir una actividad directamente */
+            // Elegir una actividad directamente
             flujo_elegir_actividad();
         } else if (opcion == 0) {
             printf("Hasta luego, %s\n", usuario_actual.nombre);
@@ -849,6 +844,7 @@ int main(int argc, char *argv[]) {
             printf("Tiene que escribir una opcion valida.\n");
         }
     } while (opcion != 0);
+
 
     return 0;
 }
