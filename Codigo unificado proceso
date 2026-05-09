@@ -281,7 +281,7 @@ int es_util_recomendacion() {
 /* ================================================================== */
 int menu_ordenar() {
     int opcion;
-
+    // Se crea un menu para que el usuario elija lo que quiere
     printf("=== ORDENAR ACTIVIDADES ===\n");
     printf("1) Por lugar\n");
     printf("2) Por horario\n");
@@ -290,18 +290,25 @@ int menu_ordenar() {
     printf("0) Volver\n");
     printf("Elige una opcion: ");
     opcion = leer_entero();
-
-    switch (opcion) {
-        case 1: ordenar_por_lugar();     mostrar_actividades(total); break;
-        case 2: ordenar_por_horario();   mostrar_actividades(total); break;
-        case 3: ordenar_por_actividad(); mostrar_actividades(total); break;
-        case 4: ordenar_por_libres();    mostrar_actividades(total); break;
-        case 0: break;
-        default: printf("Opcion no valida.\n");
+    // Se ejecuta lo que ha escogido el usuario
+    if (opcion == 1) {
+        ordenar_por_lugar();
+        mostrar_actividades(total);
+    } else if (opcion == 2) {
+        ordenar_por_horario();
+        mostrar_actividades(total);
+    } else if (opcion == 3) {
+        ordenar_por_actividad();
+        mostrar_actividades(total);
+    } else if (opcion == 4) {
+        ordenar_por_libres();
+        mostrar_actividades(total);
+    } else if (opcion != 0) {
+        printf("Opcion no valida.\n");
     }
     return opcion;
 }
-
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades alfabeticamente según la columna centro
 int ordenar_por_lugar() {
     int i, j, intercambios = 0;
     Actividad temp;
@@ -317,7 +324,7 @@ int ordenar_por_lugar() {
     }
     return intercambios;
 }
-
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades alfabeticamente según la columna hora_inicio
 int ordenar_por_horario() {
     int i, j, intercambios = 0;
     Actividad temp;
@@ -334,7 +341,7 @@ int ordenar_por_horario() {
     }
     return intercambios;
 }
-
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades alfabeticamente según la columna actividad
 int ordenar_por_actividad() {
     int i, j, intercambios = 0;
     Actividad temp;
@@ -350,7 +357,7 @@ int ordenar_por_actividad() {
     }
     return intercambios;
 }
-
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades de mayor a menor según la columna plazas ocupadas
 int ordenar_por_libres() {
     int i, j, intercambios = 0;
     Actividad temp;
@@ -366,13 +373,13 @@ int ordenar_por_libres() {
     }
     return intercambios;
 }
-
+// Se cambian las horas de un formato hh:mm a solo minutos para poder compararlo
 int hora_a_minutos(const char *hora) {
     int h = 0, m = 0;
     sscanf(hora, "%d:%d", &h, &m);
     return h * 60 + m;
 }
-
+// Se muestran los resultados de las operaciones anteriores usando una tabla
 int mostrar_actividades(int n) {
     int i;
     if (n > total) n = total;
@@ -807,14 +814,18 @@ int menu_estadisticas() {
     printf("Elige una opcion: ");
     opcion = leer_entero();
 
-    switch (opcion) {
-        case 1: dia_mas_actividad_general();        break;
-        case 2: actividades_mas_populares_general(); break;
-        case 3: dia_mas_actividad_por_centro();      break;
-        case 4: actividades_populares_por_centro();  break;
-        case 5: horarios_de_centro();                break;
-        case 0: break;
-        default: printf("Opcion no valida.\n");
+    if (opcion == 1) {
+        dia_mas_actividad_general();
+    } else if (opcion == 2) {
+        actividades_mas_populares_general();
+    } else if (opcion == 3) {
+        dia_mas_actividad_por_centro();
+    } else if (opcion == 4) {
+        actividades_populares_por_centro();
+    } else if (opcion == 5) {
+        horarios_de_centro();
+    } else if (opcion != 0) {
+        printf("Opcion no valida.\n");
     }
     return opcion;
 }
@@ -853,38 +864,27 @@ int main(int argc, char *argv[]) {
     do {
         opcion = menu_principal();
 
-        switch (opcion) {
-            case 1:
-                /* Quiere recomendación → flujo rojo + naranja */
-                recomendar();
-                if (es_util_recomendacion()) {
-                    flujo_elegir_actividad();
-                } else {
-                    menu_ordenar();
-                }
-                break;
-
-            case 2:
-                /* Ver estadísticas → flujo morado + lima */
-                menu_estadisticas();
-                break;
-
-            case 3:
-                /* Ordenar actividades manualmente → flujo verde */
-                menu_ordenar();
-                break;
-
-            case 4:
-                /* Elegir una actividad directamente */
+        if (opcion == 1) {
+            /* Quiere recomendación → flujo rojo + naranja */
+            recomendar();
+            if (es_util_recomendacion()) {
                 flujo_elegir_actividad();
-                break;
-
-            case 0:
-                printf("Hasta luego, %s\n", usuario_actual.nombre);
-                break;
-
-            default:
-                printf("Tiene que escribir una opcion valida.\n");
+            } else {
+                menu_ordenar();
+            }
+        } else if (opcion == 2) {
+            /* Ver estadísticas → flujo morado + lima */
+            menu_estadisticas();
+        } else if (opcion == 3) {
+            /* Ordenar actividades manualmente → flujo verde */
+            menu_ordenar();
+        } else if (opcion == 4) {
+            /* Elegir una actividad directamente */
+            flujo_elegir_actividad();
+        } else if (opcion == 0) {
+            printf("Hasta luego, %s\n", usuario_actual.nombre);
+        } else {
+            printf("Tiene que escribir una opcion valida.\n");
         }
     } while (opcion != 0);
 
