@@ -1,6 +1,7 @@
 // 1. INCLUDES, librerias utilizadas
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>   // malloc, free
 
 // 2. CONSTANTES
 #define MAX_ACTIVIDADES 5100
@@ -53,7 +54,8 @@ typedef struct {
 
 
 // 4. VARIABLES GLOBALES
-Actividad actividades[MAX_ACTIVIDADES];
+// Puntero a memoria dinamica (se reserva en main con malloc y se libera con free)
+Actividad *actividades = NULL;
 int total = 0;
 Usuario   usuario_actual;
 
@@ -139,7 +141,7 @@ int cargar_csv(const char *ruta) {
 
 // 7. Login y recomendación
 void leer_linea(char *destino, int tamano) {
-	// Se asegura que una linea no este vacia y cuenta los espacios que hay hasta el \n
+    // Se asegura que una linea no este vacia y cuenta los espacios que hay hasta el \n
     if (fgets(destino, tamano, stdin) != NULL) {
         destino[strcspn(destino, "\n")] = '\0';
     } else {
@@ -184,7 +186,7 @@ int normalizar_hora_a_minutos(const char *hora) {
 
     // Saltar espacios iniciales
     while (hora[i] == ' ')
-	i++;
+        i++;
 
     // Leer horas (dígitos antes del separador o fin)
     while (hora[i] >= '0' && hora[i] <= '9') {
@@ -248,7 +250,7 @@ int buscar_recomendaciones(const char *hora, const char *actividad, const char *
         int ok_actividad = cadenas_parecidas(actividades[i].actividad_base, actividad);
         int ok_centro    = cadenas_parecidas(actividades[i].centro, centro);
 
-        if (ok_hora && ok_actividad && ok_centro) {
+        if (ok_hora == 1 && ok_actividad == 1 && ok_centro == 1) {
             encontrados_total++;
             if (actividades[i].libres > 0) {
                 printf("  %-10s  %-30s  %-5s  %-5s  %-30s  %5d  %5d\n",
@@ -277,7 +279,7 @@ int buscar_recomendaciones(const char *hora, const char *actividad, const char *
             int ok_actividad = cadenas_parecidas(actividades[i].actividad_base, actividad);
             int ok_centro    = cadenas_parecidas(actividades[i].centro, centro);
 
-            if (ok_hora && ok_actividad && ok_centro) {
+            if (ok_hora == 1 && ok_actividad == 1 && ok_centro == 1) {
                 printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %6d  %6d\n",
                        actividades[i].dia_semana,
                        actividades[i].actividad_base,
@@ -465,7 +467,7 @@ int mostrar_actividades(int n) {
                actividades[i].hora_fin,
                actividades[i].actividad_base,
                actividades[i].libres,
-               actividades[i].completada ? "[HECHA]" : "");
+               actividades[i].completada == 1 ? "[HECHA]" : "");
     }
     printf("(mostrando %d de %d)\n\n", n, total);
     return n;
@@ -630,7 +632,7 @@ int actividades_mas_populares_general() {
     for (i = 0; i < n_acts; i++) {
         // % de ocupación de cada actividad respecto a sus propias plazas
         int oc_x10  = (acts[i].plazas_total > 0)
-                      ? (acts[i].ocupadas_total * 1000) / acts[i].plazas_total : 0; // Se multiplican por
+                      ? (acts[i].ocupadas_total * 1000) / acts[i].plazas_total : 0;
         // % del total de plazas ocupadas que se lleva esta actividad
         int pct_x10 = (total_ocupadas > 0)
                       ? (acts[i].ocupadas_total * 1000) / total_ocupadas : 0;
@@ -868,7 +870,17 @@ int main(int argc, char *argv[]) {
     const char *ruta = "dataset.csv";
     if (argc >= 2) ruta = argv[1];
 
-    if (!cargar_csv(ruta)) {
+    // ========== RESERVA DE MEMORIA DINAMICA ==========
+    // Reservamos espacio para MAX_ACTIVIDADES estructuras Actividad.
+    // (Actividad *) fuerza el cast del puntero void* devuelto por malloc.
+    actividades = (Actividad *) malloc(MAX_ACTIVIDADES * sizeof(Actividad));
+    if (actividades == NULL) {
+        printf("Error: no se pudo reservar memoria para las actividades.\n");
+        return 1;
+    }
+
+    if (cargar_csv(ruta) == 0) {
+        free(actividades);  // liberar antes de salir si falla la carga
         return 1;
     }
 
@@ -876,14 +888,15 @@ int main(int argc, char *argv[]) {
 
     login();
 
-int opcion;
+    int opcion;
     do {
         opcion = menu_principal();
 
         if (opcion == 1) {
             // Quiere recomendación
             recomendar();
-            if (es_util_recomendacion()) {
+            if (es_util_recomendacion() == 1) {
+                // Sí es útil: continuar
             } else {
                 menu_ordenar();
             }
@@ -900,6 +913,9 @@ int opcion;
         }
     } while (opcion != 0);
 
+    // Siempre que se hace malloc se debe hacer free al terminar.
+    free(actividades);
+    actividades = NULL;
 
     return 0;
 }
