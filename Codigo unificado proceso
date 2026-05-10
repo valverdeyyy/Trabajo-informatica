@@ -174,7 +174,7 @@ int login() {
     printf("Lugar preferido (centro, en blanco para ignorar): ");
     leer_linea(usuario_actual.lugar, MAX_CAMPO);
 
-    printf("Horario disponible (ej. 09:00, en blanco para ignorar): ");
+    printf("Horario disponible (formato 24h, en blanco para ignorar): ");
     leer_linea(usuario_actual.horario, MAX_CAMPO);
 
     printf("Actividad que quieres realizar (en blanco para ignorar): ");
