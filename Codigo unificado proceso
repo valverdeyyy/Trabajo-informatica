@@ -81,11 +81,6 @@ int  ordenar_por_libres();
 int  hora_a_minutos(const char *hora);
 int  mostrar_actividades(int n);
 
-// Actividades alternativas
-int  flujo_elegir_actividad();
-int  esta_completa(int indice);
-int  buscar_alternativas();
-
 // Estadísticas generales
 int  dia_mas_actividad_general();
 int  actividades_mas_populares_general();
@@ -143,9 +138,8 @@ int cargar_csv(const char *ruta) {
 }
 
 // 7. Login y recomendación
-/* Lee una línea del teclado eliminando el salto de línea final.
-   Si el usuario solo pulsa Enter, devuelve cadena vacía. */
 void leer_linea(char *destino, int tamano) {
+	// Se asegura que una linea no este vacia y cuenta los espacios que hay hasta el \n
     if (fgets(destino, tamano, stdin) != NULL) {
         destino[strcspn(destino, "\n")] = '\0';
     } else {
@@ -346,7 +340,7 @@ int recomendar() {
 
 int es_util_recomendacion() {
     char respuesta[MAX_CAMPO];
-    printf("\n¿Es util la recomendacion? (s/n): ");
+    printf("\nEs util la recomendacion? (s/n): ");
     leer_linea(respuesta, MAX_CAMPO);
     return (respuesta[0] == 's' || respuesta[0] == 'S');
 }
@@ -477,38 +471,7 @@ int mostrar_actividades(int n) {
     return n;
 }
 
-// 9. Elegir actividad / alternativas
-int flujo_elegir_actividad() {
-    int indice;
-    printf("Indica el numero de la actividad a realizar: ");
-    indice = leer_entero();
-
-    if (indice < 0 || indice >= total) {
-        printf("Indice no valido.\n");
-        return 0;
-    }
-
-    if (esta_completa(indice)) {
-        printf("Esa actividad esta completa. Buscando alternativas...\n");
-        buscar_alternativas();
-    } else {
-        actividades[indice].completada = 1;
-        printf("Actividad apuntada correctamente.\n");
-    }
-    return 1;
-}
-
-int esta_completa(int indice) {
-    return actividades[indice].libres <= 0;
-}
-
-int buscar_alternativas() {
-      // Mostrar actividades parecidas con plazas libres.
-    printf("[Aqui van las actividades alternativas]\n");
-    return 1;
-}
-
-// 10. Estadisticas generales
+// 9. Estadisticas generales
 // Ordena el array de días de mayor a menor por ocupación
 void orden_descendente(DiaSemana dias[], int n) {
     int i, j;
@@ -667,7 +630,7 @@ int actividades_mas_populares_general() {
     for (i = 0; i < n_acts; i++) {
         // % de ocupación de cada actividad respecto a sus propias plazas
         int oc_x10  = (acts[i].plazas_total > 0)
-                      ? (acts[i].ocupadas_total * 1000) / acts[i].plazas_total : 0;
+                      ? (acts[i].ocupadas_total * 1000) / acts[i].plazas_total : 0; // Se multiplican por
         // % del total de plazas ocupadas que se lleva esta actividad
         int pct_x10 = (total_ocupadas > 0)
                       ? (acts[i].ocupadas_total * 1000) / total_ocupadas : 0;
@@ -694,7 +657,7 @@ int actividades_mas_populares_general() {
     return n_acts;
 }
 
-// Estadísticas por centro
+// 10. Estadísticas por centro
 // Convierte un carácter para hacer búsquedas flexibles:
 // Funcion inspirada por el ejercicio del parcial
 char palindroma_caracter(char c) {
@@ -819,7 +782,7 @@ int actividades_populares_por_centro() {
     return dia_mas_actividad_por_centro();
 }
 
-/* Pide al usuario un texto y muestra los horarios de los centros que coinciden */
+// Pide al usuario un texto y muestra los horarios de los centros que coinciden
 int horarios_de_centro() {
     char busca_centro[MAX_CAMPO];
     int i;
@@ -859,7 +822,7 @@ int horarios_de_centro() {
     return encontrados;
 }
 
-// 12. MENÚ DE ESTADÍSTICAS
+// 11. MENÚ DE ESTADÍSTICAS
 int menu_estadisticas() {
     int opcion;
     printf("=== ESTADISTICAS ===\n");
@@ -888,20 +851,19 @@ int menu_estadisticas() {
     return opcion;
 }
 
-// 13. MENÚ PRINCIPAL
+// 12. MENÚ PRINCIPAL
 int menu_principal() {
     printf("\n¿Que desea realizar?\n");
     printf("(1) Recomendacion personalizada\n");
-    printf("(2) Ver estadisticas\n");
-    printf("(3) Ordenar actividades\n");
-    printf("(4) Elegir una actividad\n");
+    printf("(2) Ordenar actividades\n");
+    printf("(3) Ver estadisticas\n");
     printf("(0) Salir\n");
     printf("Elige una opcion: ");
     return leer_entero();
 }
 
 
-// 14. MAIN
+// 13. MAIN
 int main(int argc, char *argv[]) {
     const char *ruta = "dataset.csv";
     if (argc >= 2) ruta = argv[1];
@@ -914,7 +876,7 @@ int main(int argc, char *argv[]) {
 
     login();
 
-    int opcion;
+int opcion;
     do {
         opcion = menu_principal();
 
@@ -922,19 +884,15 @@ int main(int argc, char *argv[]) {
             // Quiere recomendación
             recomendar();
             if (es_util_recomendacion()) {
-                flujo_elegir_actividad();
             } else {
                 menu_ordenar();
             }
         } else if (opcion == 2) {
-            // Ver estadísticas
-            menu_estadisticas();
-        } else if (opcion == 3) {
             // Ordenar actividades manualmente
             menu_ordenar();
-        } else if (opcion == 4) {
-            // Elegir una actividad directamente
-            flujo_elegir_actividad();
+        } else if (opcion == 3) {
+            // Ver estadísticas
+            menu_estadisticas();
         } else if (opcion == 0) {
             printf("Hasta luego, %s\n", usuario_actual.nombre);
         } else {
