@@ -76,23 +76,6 @@ int palindroma(const char *texto, const char *busqueda) {
     }
     return encontrado;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Funcion para extraer datos adaptada a espacios
 void extraer_dato_real(const char *linea, int col, char *dest) {
     int campo_actual = 0;
