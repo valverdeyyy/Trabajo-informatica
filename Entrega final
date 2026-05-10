@@ -1,7 +1,7 @@
 // 1. INCLUDES, librerias utilizadas
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>   // para el malloc y free
+#include <stdlib.h>  
 
 // 2. CONSTANTES
 #define MAX_ACTIVIDADES 5100
@@ -125,7 +125,7 @@ int cargar_csv(const char *ruta, Actividad *actividades, int *total) {
         if (leidos == 13) {
             a.completada = 0;
             actividades[*total] = a;
-            (*total)++;     // los parentesis son IMPORTANTES: incrementa el valor, no el puntero
+            (*total)++;    
         }
     }
 
@@ -485,7 +485,7 @@ void orden_descendente(DiaSemana dias[], int n) {
     }
 }
 
-/* Dibuja una barra  proporcional al valor */
+// Dibuja una barra  proporcional al valor
 void imprimir_barra(int valor, int maximo) {
     int ancho  = 40;
     int llenas = (maximo > 0) ? (valor * ancho) / maximo : 0;
@@ -496,14 +496,14 @@ void imprimir_barra(int valor, int maximo) {
     printf("]");
 }
 
-/* Busca un día por nombre; si no existe, lo crea. Devuelve el índice. */
+// Busca un día por nombre; si no existe, lo crea. Devuelve el índice. 
 int buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre) {
     int i;
     for (i = 0; i < *n_dias; i++) {
         if (strcmp(dias[i].nombre, nombre) == 0)
             return i;
     }
-    /* Crear un día nuevo */
+    // Crear un día nuevo
     strncpy(dias[*n_dias].nombre, nombre, MAX_CAMPO - 1);
     dias[*n_dias].nombre[MAX_CAMPO - 1] = '\0';
     dias[*n_dias].ocupadas_total        = 0;
@@ -516,7 +516,7 @@ int dia_mas_actividad_general(Actividad *actividades, int total) {
     int n_dias = 0;
     int i;
 
-    /* Recorrer todas las actividades cargadas y acumular por día */
+    // Recorrer todas las actividades cargadas y acumular por día 
     for (i = 0; i < total; i++) {
         int idx = buscar_o_crear_dia(dias, &n_dias, actividades[i].dia_semana);
         dias[idx].ocupadas_total += actividades[i].ocupadas;
@@ -528,10 +528,10 @@ int dia_mas_actividad_general(Actividad *actividades, int total) {
         return 0;
     }
 
-    /* Ordenar de mayor a menor */
+    // Ordenar de mayor a menor
     orden_descendente(dias, n_dias);
 
-    /* Calcular totales */
+    // Calcular totales
     int ocupadas_max    = dias[0].ocupadas_total;
     int ocupadas_global = 0;
     for (i = 0; i < n_dias; i++)
@@ -869,9 +869,8 @@ int main(int argc, char *argv[]) {
     if (argc >= 2)
         ruta = argv[1];
 
-    // RESERVA DE MEMORIA DINAMICA (malloc)
     // Al ser punteros de diferente tipo (void != Actividad) tengo que forzar que el void se convierta en Actividad con (Actividad*)
-    // cast incluido por si se compila como C++
+    // cast incluido por si se compila como C++ (consulta a familiar)
     Actividad * actividades = (Actividad *) malloc(MAX_ACTIVIDADES * sizeof(Actividad));
     if (actividades == NULL) {
         printf("Error: memoria no disponible\n");
@@ -912,7 +911,7 @@ int main(int argc, char *argv[]) {
         }
     } while (opcion != 0);
 
-    // Siempre que se hace malloc se debe hacer free al terminar.
+    // free del malloc anterior
     free(actividades);
 
     return 0;
