@@ -694,7 +694,7 @@ int actividades_mas_populares_general() {
     return n_acts;
 }
 
-// 11. BLOQUE LIMA — Estadísticas por centro
+// Estadísticas por centro
 // Convierte un carácter para hacer búsquedas flexibles:
 // Funcion inspirada por el ejercicio del parcial
 char palindroma_caracter(char c) {
