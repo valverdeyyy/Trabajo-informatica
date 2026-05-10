@@ -1,0 +1,918 @@
+// 1. INCLUDES, librerias utilizadas
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>   // pora el malloc y free
+
+// 2. CONSTANTES
+#define MAX_ACTIVIDADES 5100
+#define MAX_CAMPO       64
+#define MAX_USUARIOS    100
+#define MAX_DIAS        7
+#define MAX_TIPOS_ACTIVIDAD 256
+#define MAX_CENTROS     50
+
+// 3. ESTRUCTURAS
+typedef struct {
+    int  anio;
+    int  mes;
+    int  dia;
+    char dia_semana[MAX_CAMPO];
+    char hora_inicio[MAX_CAMPO];
+    char hora_fin[MAX_CAMPO];
+    char actividad_base[MAX_CAMPO];
+    char modalidad[MAX_CAMPO];
+    char centro[MAX_CAMPO];
+    int  plazas;
+    int  ocupadas;
+    int  libres;
+    char tipo_actividad[MAX_CAMPO];
+    int  completada;       // 0 = no, 1 = sí (para marcar las completas)
+} Actividad;
+
+typedef struct {
+    char nombre[MAX_CAMPO];
+    char lugar[MAX_CAMPO];
+    char horario[MAX_CAMPO];
+    char actividad_deseada[MAX_CAMPO];
+} Usuario;
+
+// Auxiliar para estadísticas por día y actividad
+typedef struct {
+    char nombre[MAX_CAMPO];
+    int  ocupadas_total;
+    int  registros;
+    int  plazas_total;
+} DiaSemana;
+
+// Auxiliar para estadísticas por centro
+typedef struct {
+    char nombre[MAX_CAMPO];
+    char dia_top[MAX_CAMPO];
+    char actividad_top[MAX_CAMPO];
+    int  max_ocupacion;
+} InfoCentro;
+
+// 4. DECLARACIONES ADELANTADAS
+// Carga del fichero
+int  cargar_csv(const char *ruta);
+
+// Login y recomendación
+int  login();
+int  recomendar();
+int  es_util_recomendacion();
+int  buscar_recomendaciones(const char *hora, const char *actividad, const char *centro);
+void leer_linea(char *destino, int tamano);
+int  leer_entero();
+int  normalizar_hora_a_minutos(const char *hora);
+int  horas_parecidas(const char *h1, const char *h2, int margen_min);
+int  cadenas_parecidas(const char *texto, const char *busqueda);
+
+// Ordenar actividades
+int  menu_ordenar();
+int  ordenar_por_lugar();
+int  ordenar_por_horario();
+int  ordenar_por_actividad();
+int  ordenar_por_libres();
+int  hora_a_minutos(const char *hora);
+int  mostrar_actividades(int n);
+
+// Estadísticas generales
+int  dia_mas_actividad_general();
+int  actividades_mas_populares_general();
+void orden_descendente(DiaSemana dias[], int n);
+void imprimir_barra(int valor, int maximo);
+int  buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre);
+
+// Estadísticas por centro
+int  dia_mas_actividad_por_centro();
+int  actividades_populares_por_centro();
+int  horarios_de_centro();
+char palindroma_caracter(char c);
+void palindroma_string(const char *original, char *destino, int max);
+int  palindroma(const char *texto, const char *busqueda);
+
+// Menús
+int  menu_principal();
+int  menu_estadisticas();
+
+// 5. CARGA DEL FICHERO
+int cargar_csv(const char *ruta, int *total, Actividad *actividades) {
+    FILE *f = fopen(ruta, "r");
+    if (f == NULL) {
+        printf("Error: no se pudo abrir '%s'\n", ruta);
+        return 0;
+    }
+
+    char linea[512];
+    fgets(linea, sizeof(linea), f);
+
+    *total = 0;
+    while (fgets(linea, sizeof(linea), f) != NULL && *total < MAX_ACTIVIDADES) {
+        linea[strcspn(linea, "\n")] = '\0';
+
+        Actividad a;
+        int leidos = sscanf(linea,
+            "%d %d %d %s %s %s %s %s %s %d %d %d %s",
+            &a.anio, &a.mes, &a.dia,
+            a.dia_semana,
+            a.hora_inicio, a.hora_fin,
+            a.actividad_base, a.modalidad, a.centro,
+            &a.plazas, &a.ocupadas, &a.libres,
+            a.tipo_actividad);
+
+        if (leidos == 13) {
+            a.completada = 0;
+            actividades[*total] = a;
+            *total ++;
+        }
+    }
+
+    fclose(f);
+    printf("Se cargaron %d actividades.\n\n", *total);
+    return 1;
+}
+
+// 6. Login y recomendación
+void leer_linea(char *destino, int tamano) {
+    // Se asegura que una linea no este vacia y cuenta los espacios que hay hasta el \n
+    if (fgets(destino, tamano, stdin) != NULL) {
+        destino[strcspn(destino, "\n")] = '\0';
+    } else {
+        destino[0] = '\0';
+    }
+}
+
+// Cambia un char a un int
+int leer_entero() {
+    char buffer[MAX_CAMPO];
+    leer_linea(buffer, MAX_CAMPO);
+    int n = 0, signo = 1, i = 0;
+    if (buffer[0] == '-') { signo = -1; i = 1; }
+    while (buffer[i] >= '0' && buffer[i] <= '9') {
+        n = n * 10 + (buffer[i] - '0');
+        i++;
+    }
+    return n * signo;
+}
+
+int login(Usuario *usuario) {
+    printf("=== LOGIN ===\n");
+    printf("Nombre de usuario: ");
+    leer_linea(usuario->nombre, MAX_CAMPO);
+
+    printf("Lugar preferido (centro, en blanco para ignorar): ");
+    leer_linea(usuario->lugar, MAX_CAMPO);
+
+    printf("Horario disponible (formato 24h, en blanco para ignorar): ");
+    leer_linea(usuario->horario, MAX_CAMPO);
+
+    printf("Actividad que quieres realizar (en blanco para ignorar): ");
+    leer_linea(usuario->actividad_deseada, MAX_CAMPO);
+
+    printf("\nBienvenido, %s\n\n", usuario->nombre);
+    return 1;
+}
+
+// Para poder comparar las horas
+int normalizar_hora_a_minutos(const char *hora) {
+    int h = 0, m = 0, i = 0;
+
+    // Saltar espacios iniciales
+    while (hora[i] == ' ')
+        i++;
+
+    // Leer horas (dígitos antes del separador o fin)
+    while (hora[i] >= '0' && hora[i] <= '9') {
+        h = h * 10 + (hora[i] - '0');
+        i++;
+    }
+
+    // Si hay separador (':' o '.')
+    if (hora[i] == ':' || hora[i] == '.') {
+        i++;
+        while (hora[i] >= '0' && hora[i] <= '9') {
+            m = m * 10 + (hora[i] - '0');
+            i++;
+        }
+    }
+    // Si no hay separador que 900 sea 9.00
+    else if (h >= 100) {
+        m = h % 100;
+        h = h / 100;
+    }
+
+    return h * 60 + m;
+}
+
+// Compara la hora introducida por el usuario con la csv para ver si es parecida y compararla
+int horas_parecidas(const char *h1, const char *h2, int margen_min) {
+    int resultado = 1;
+    if (h2[0] != '\0') {
+        int min1 = normalizar_hora_a_minutos(h1);
+        int min2 = normalizar_hora_a_minutos(h2);
+        int diff = min1 - min2;
+        if (diff < 0) diff = -diff;
+        resultado = (diff <= margen_min);
+    }
+    return resultado;
+}
+
+// La funcion palindroma esta más abajo por que se hizo en otro bloque en un principio
+int cadenas_parecidas(const char *texto, const char *busqueda) {
+    int resultado = 1;
+    if (busqueda[0] != '\0') {
+        resultado = palindroma(texto, busqueda);
+    }
+    return resultado;
+}
+
+// Busca actividades en el array global que coincidan con los filtros.
+int buscar_recomendaciones(const char *hora, const char *actividad, const char *centro,
+	Actividad *actividades, int total){
+
+    int encontrados_libres  = 0;
+    int encontrados_total   = 0;
+    int i;
+
+    // Primera pasada: mostrar actividades con plazas libres
+    printf("\n  %-10s  %-30s  %-5s  %-5s  %-30s  %5s  %5s\n",
+           "DIA", "ACTIVIDAD", "INICIO", "FIN", "CENTRO", "LIBRES", "OCUP.");
+    printf("  ---------------------------------------------------"
+           "------------------------------------------------------\n");
+
+    for (i = 0; i < total; i++) {
+        int ok_hora      = horas_parecidas(actividades[i].hora_inicio, hora, 60);
+        int ok_actividad = cadenas_parecidas(actividades[i].actividad_base, actividad);
+        int ok_centro    = cadenas_parecidas(actividades[i].centro, centro);
+
+        if (ok_hora == 1 && ok_actividad == 1 && ok_centro == 1) {
+            encontrados_total++;
+            if (actividades[i].libres > 0) {
+                printf("  %-10s  %-30s  %-5s  %-5s  %-30s  %5d  %5d\n",
+                       actividades[i].dia_semana,
+                       actividades[i].actividad_base,
+                       actividades[i].hora_inicio,
+                       actividades[i].hora_fin,
+                       actividades[i].centro,
+                       actividades[i].libres,
+                       actividades[i].ocupadas);
+                encontrados_libres++;
+            }
+        }
+    }
+
+    // Si no hay ninguna con plazas libres, mostrar todas las coincidentes
+    if (encontrados_libres == 0 && encontrados_total > 0) {
+        printf("  (Sin plazas libres exactas; mostrando todas las coincidentes)\n\n");
+        printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %6s  %6s\n",
+               "DIA", "ACTIVIDAD", "INICIO", "FIN", "CENTRO", "LIBRES", "OCUP.");
+        printf("  ---------------------------------------------------"
+               "------------------------------------------------------\n");
+
+        for (i = 0; i < total; i++) {
+            int ok_hora      = horas_parecidas(actividades[i].hora_inicio, hora, 60);
+            int ok_actividad = cadenas_parecidas(actividades[i].actividad_base, actividad);
+            int ok_centro    = cadenas_parecidas(actividades[i].centro, centro);
+
+            if (ok_hora == 1 && ok_actividad == 1 && ok_centro == 1) {
+                printf("  %-12s  %-30s  %-8s  %-8s  %-30s  %6d  %6d\n",
+                       actividades[i].dia_semana,
+                       actividades[i].actividad_base,
+                       actividades[i].hora_inicio,
+                       actividades[i].hora_fin,
+                       actividades[i].centro,
+                       actividades[i].libres,
+                       actividades[i].ocupadas);
+            }
+        }
+    }
+
+    return encontrados_total;
+}
+
+int recomendar(Usuario *usuario) {
+    printf("\n==========================================================\n");
+    printf("             BUSCADOR DE ACTIVIDADES\n");
+    printf("==========================================================\n\n");
+    printf("  Buscando actividades segun los datos del login.\n");
+    printf("  Puedes escribir el valor o pulsar Enter para usar el del login.\n");
+    printf("  El nombre de actividad y centro puede ser parcial,\n");
+    printf("  con espacios o guiones bajos, en mayusculas o minusculas.\n\n");
+
+    char hora[MAX_CAMPO];
+    char actividad[MAX_CAMPO];
+    char centro[MAX_CAMPO];
+
+    printf("  Hora de inicio [%s]: ", usuario->horario);
+    leer_linea(hora, MAX_CAMPO);
+    if (hora[0] == '\0') strcpy(hora, usuario->horario);
+
+    printf("  Actividad      [%s]: ", usuario->actividad_deseada);
+    leer_linea(actividad, MAX_CAMPO);
+    if (actividad[0] == '\0') strcpy(actividad, usuario->actividad_deseada);
+
+    printf("  Centro         [%s]: ", usuario->lugar);
+    leer_linea(centro, MAX_CAMPO);
+    if (centro[0] == '\0') strcpy(centro, usuario->lugar);
+
+    printf("\n  Filtros aplicados:\n");
+    if (hora[0]      != '\0') printf("    Hora      : %s (margen +/-60 min)\n", hora);
+    if (actividad[0] != '\0') printf("    Actividad : contiene '%s'\n", actividad);
+    if (centro[0]    != '\0') printf("    Centro    : contiene '%s'\n", centro);
+    if (hora[0] == '\0' && actividad[0] == '\0' && centro[0] == '\0')
+        printf("    (ningun filtro activo, mostrando todas)\n");
+
+    int encontrados = buscar_recomendaciones(hora, actividad, centro);
+
+    if (encontrados == 0) {
+        printf("\n  No se encontraron actividades con esos criterios.\n");
+        printf("  Sugerencia: prueba con un nombre mas corto o deja algun campo en blanco.\n");
+    } else {
+        printf("\n  Total coincidencias: %d\n", encontrados);
+    }
+    printf("\n");
+
+    return encontrados;
+}
+
+int es_util_recomendacion() {
+    char respuesta[MAX_CAMPO];
+    printf("\nEs util la recomendacion? (s/n): ");
+    leer_linea(respuesta, MAX_CAMPO);
+    return (respuesta[0] == 's' || respuesta[0] == 'S');
+}
+
+
+// 7. Ordenar actividades
+int menu_ordenar(int *total, Actividad *actividades) {
+    int opcion;
+    // Se crea un menu para que el usuario elija lo que quiere
+    printf("=== ORDENAR ACTIVIDADES ===\n");
+    printf("1) Por lugar\n");
+    printf("2) Por horario\n");
+    printf("3) Por actividad\n");
+    printf("4) Por plazas libres (mayor a menor)\n");
+    printf("0) Volver\n");
+    printf("Elige una opcion: ");
+    opcion = leer_entero();
+
+    if (opcion == 1) {
+        ordenar_por_lugar();
+        mostrar_actividades(*total);
+    } else if (opcion == 2) {
+        ordenar_por_horario();
+        mostrar_actividades(*total);
+    } else if (opcion == 3) {
+        ordenar_por_actividad();
+        mostrar_actividades(*total);
+    } else if (opcion == 4) {
+        ordenar_por_libres();
+        mostrar_actividades(*total);
+    } else if (opcion != 0) {
+        printf("Opcion no valida.\n");
+    }
+    return opcion;
+}
+// Usando strcmp y tres variables i, j, e intercambios (aux) va ordenando las actividades alfabeticamente según la columna centro
+int ordenar_por_lugar( int *total, Actividad *actividades) {
+    int i, j, intercambios = 0;
+    Actividad temp;
+    for (i = 0; i < *total - 1; i++) {
+        for (j = 0; j < *total - 1 - i; j++) {
+            if (strcmp(actividades[j].centro, actividades[j+1].centro) > 0) {
+                temp = actividades[j];
+                actividades[j] = actividades[j+1];
+                actividades[j+1] = temp;
+                intercambios++;
+            }
+        }
+    }
+    return intercambios;
+}
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades alfabeticamente según la columna hora_inicio
+int ordenar_por_horario(Actividad *actividades, int total) {
+    int i, j, intercambios = 0;
+    Actividad temp;
+    for (i = 0; i < total - 1; i++) {
+        for (j = 0; j < total - 1 - i; j++) {
+            if (hora_a_minutos(actividades[j].hora_inicio) >
+                hora_a_minutos(actividades[j+1].hora_inicio)) {
+                temp = actividades[j];
+                actividades[j] = actividades[j+1];
+                actividades[j+1] = temp;
+                intercambios++;
+            }
+        }
+    }
+    return intercambios;
+}
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades alfabeticamente según la columna actividad
+int ordenar_por_actividad( int *total, Actividad *actividades) {
+    int i, j, intercambios = 0;
+    Actividad temp;
+    for (i = 0; i < *total - 1; i++) {
+        for (j = 0; j < *total - 1 - i; j++) {
+            if (strcmp(actividades[j].actividad_base, actividades[j+1].actividad_base) > 0) {
+                temp = actividades[j];
+                actividades[j] = actividades[j+1];
+                actividades[j+1] = temp;
+                intercambios++;
+            }
+        }
+    }
+    return intercambios;
+}
+// Usando strcmp y tres variables i, j, e intercambios va ordenando las actividades de mayor a menor según la columna plazas ocupadas
+int ordenar_por_libres(Actividad *actividades, int total) {
+    int i, j, intercambios = 0;
+    Actividad temp;
+    for (i = 0; i < total - 1; i++) {
+        for (j = 0; j < total - 1 - i; j++) {
+            if (actividades[j].libres < actividades[j+1].libres) {
+                temp = actividades[j];
+                actividades[j] = actividades[j+1];
+                actividades[j+1] = temp;
+                intercambios++;
+            }
+        }
+    }
+    return intercambios;
+}
+// Se cambian las horas de un formato hh:mm a solo minutos para poder compararlo
+int hora_a_minutos(const char *hora) {
+    int h = 0, m = 0;
+    sscanf(hora, "%d:%d", &h, &m);
+    return h * 60 + m;
+}
+// Se muestran los resultados de las operaciones anteriores usando una tabla
+int mostrar_actividades(int n, Actividad *actividades, int total) {
+    int i;
+    if (n > total) n = total;
+
+    printf("%-30s %-10s %-8s %-35s %-8s %s\n",
+           "Centro", "Hora ini", "Hora fin", "Actividad", "Libres", "Estado");
+    printf("%-30s %-10s %-8s %-35s %-8s %s\n",
+           "------------------------------", "----------", "--------",
+           "-----------------------------------", "--------", "--------");
+
+    for (i = 0; i < n; i++) {
+        printf("%-30s %-10s %-8s %-35s %-8d %s\n",
+               actividades[i].centro,
+               actividades[i].hora_inicio,
+               actividades[i].hora_fin,
+               actividades[i].actividad_base,
+               actividades[i].libres,
+               actividades[i].completada == 1 ? "[HECHA]" : "");
+    }
+    printf("(mostrando %d de %d)\n\n", n, total);
+    return n;
+}
+
+// 8. Estadisticas generales
+// Ordena el array de días de mayor a menor por ocupación
+void orden_descendente(DiaSemana dias[], int n) {
+    int i, j;
+    DiaSemana aux;
+    for (i = 0; i < n - 1; i++) {
+        for (j = 0; j < n - 1 - i; j++) {
+            if (dias[j].ocupadas_total < dias[j + 1].ocupadas_total) {
+                aux = dias[j];
+                dias[j] = dias[j + 1];
+                dias[j + 1] = aux;
+            }
+        }
+    }
+}
+
+/* Dibuja una barra  proporcional al valor */
+void imprimir_barra(int valor, int maximo) {
+    int ancho  = 40;
+    int llenas = (maximo > 0) ? (valor * ancho) / maximo : 0;
+    int i;
+    printf("[");
+    for (i = 0; i < ancho; i++)
+        printf(i < llenas ? "#" : " ");
+    printf("]");
+}
+
+/* Busca un día por nombre; si no existe, lo crea. Devuelve el índice. */
+int buscar_o_crear_dia(DiaSemana dias[], int *n_dias, const char *nombre) {
+    int i;
+    for (i = 0; i < *n_dias; i++) {
+        if (strcmp(dias[i].nombre, nombre) == 0)
+            return i;
+    }
+    /* Crear un día nuevo */
+    strncpy(dias[*n_dias].nombre, nombre, MAX_CAMPO - 1);
+    dias[*n_dias].nombre[MAX_CAMPO - 1] = '\0';
+    dias[*n_dias].ocupadas_total        = 0;
+    dias[*n_dias].registros             = 0;
+    return (*n_dias)++;
+}
+
+int dia_mas_actividad_general(Actividad *actividades, int total) {
+    DiaSemana dias[MAX_DIAS];
+    int n_dias = 0;
+    int i;
+
+    /* Recorrer todas las actividades cargadas y acumular por día */
+    for (i = 0; i < total; i++) {
+        int idx = buscar_o_crear_dia(dias, &n_dias, actividades[i].dia_semana);
+        dias[idx].ocupadas_total += actividades[i].ocupadas;
+        dias[idx].registros++;
+    }
+
+    if (n_dias == 0) {
+        printf("No se encontraron datos validos.\n");
+        return 0;
+    }
+
+    /* Ordenar de mayor a menor */
+    orden_descendente(dias, n_dias);
+
+    /* Calcular totales */
+    int ocupadas_max    = dias[0].ocupadas_total;
+    int ocupadas_global = 0;
+    for (i = 0; i < n_dias; i++)
+        ocupadas_global += dias[i].ocupadas_total;
+
+    // SALIDA
+    printf("\n");
+    printf("==========================================================\n");
+    printf("      ANALISIS DE POPULARIDAD POR DIA DE SEMANA\n");
+    printf("==========================================================\n\n");
+
+    printf("  Actividades leidas : %d\n",   total);
+    printf("  Dias distintos     : %d\n\n", n_dias);
+
+    printf("  %10s  %10s  %10s 	 %5s \n",
+           "DIA", "PLAZAS OC.", "ACTIVIDADES", "% TOTAL");
+
+    for (i = 0; i < n_dias; i++) {
+        int pct_x10;
+        if (ocupadas_global > 0) {
+            pct_x10 = (dias[i].ocupadas_total * 1000) / ocupadas_global;
+        } else {
+            pct_x10 = 0;
+        }
+
+        printf("  %10s  %10d  %10d    %5d.%d%%  ",
+               dias[i].nombre,
+               dias[i].ocupadas_total,
+               dias[i].registros,
+               pct_x10 / 10,
+               pct_x10 % 10);
+
+    }
+
+    printf("  ---------------------------------------------------------------------------\n");
+    printf("  %10s  %10d  %10d    100.0%%\n",
+           "TOTAL", ocupadas_global, total);
+
+    int top_pct_x10 = (ocupadas_global > 0)
+                      ? (dias[0].ocupadas_total * 1000) / ocupadas_global : 0;
+
+    printf("  ---------------------------------------------------------------------------\n\n");
+    printf("     DIA MAS POPULAR : %s\n",  dias[0].nombre);
+    printf("     Plazas ocupadas : %d\n",  dias[0].ocupadas_total);
+    printf("     Registros       : %d\n",  dias[0].registros);
+    printf("     Porcentaje      : %d.%d%% del total de ocupacion\n\n",
+           top_pct_x10 / 10, top_pct_x10 % 10);
+
+    return 1;
+}
+
+int actividades_mas_populares_general(Actividad *actividades, int total) {
+    DiaSemana acts[MAX_TIPOS_ACTIVIDAD];
+    int n_acts = 0;
+    int i;
+
+    // Inicializar el array
+    for (i = 0; i < MAX_TIPOS_ACTIVIDAD; i++) {
+        acts[i].nombre[0]      = '\0';
+        acts[i].ocupadas_total = 0;
+        acts[i].registros      = 0;
+        acts[i].plazas_total   = 0;
+    }
+
+    // Acumular por tipo de actividad (reutilizamos buscar_o_crear_dia)
+    for (i = 0; i < total; i++) {
+        int idx = buscar_o_crear_dia(acts, &n_acts, actividades[i].actividad_base);
+        if (idx >= 0) {
+            acts[idx].ocupadas_total += actividades[i].ocupadas;
+            acts[idx].plazas_total   += actividades[i].plazas;
+            acts[idx].registros++;
+        }
+    }
+
+    // Ordenar de mayor a menor por ocupación
+    orden_descendente(acts, n_acts);
+
+    int total_ocupadas = 0;
+    int total_plazas   = 0;
+    for (i = 0; i < n_acts; i++) {
+        total_ocupadas += acts[i].ocupadas_total;
+        total_plazas   += acts[i].plazas_total;
+    }
+
+    printf("\n");
+    printf("==========================================================\n");
+    printf("        RANKING DE ACTIVIDADES POR POPULARIDAD\n");
+    printf("==========================================================\n\n");
+
+    printf("  %-5s  %-45s  %10s  %10s  %10s  %10s\n",
+           "POS", "ACTIVIDAD", "OCUPADAS", "PLAZAS", "OCUP. %", "% TOTAL");
+    printf("  ------------------------------------------------------------------------------------------------\n");
+
+    for (i = 0; i < n_acts; i++) {
+        // % de ocupación de cada actividad respecto a sus propias plazas
+        int oc_x10  = (acts[i].plazas_total > 0)
+                      ? (acts[i].ocupadas_total * 1000) / acts[i].plazas_total : 0;
+        // % del total de plazas ocupadas que se lleva esta actividad
+        int pct_x10 = (total_ocupadas > 0)
+                      ? (acts[i].ocupadas_total * 1000) / total_ocupadas : 0;
+
+        printf("  %-5d  %-45s  %10d  %10d  %7d.%d%%  %7d.%d%%\n",
+               i + 1,
+               acts[i].nombre,
+               acts[i].ocupadas_total,
+               acts[i].plazas_total,
+               oc_x10  / 10, oc_x10  % 10,
+               pct_x10 / 10, pct_x10 % 10);
+    }
+
+    printf("  ------------------------------------------------------------------------------------------------\n");
+    printf("  %-5s  %-45s  %10d  %10d\n\n", "", "TOTAL", total_ocupadas, total_plazas);
+
+    if (n_acts > 0) {
+        printf("  >>> ACTIVIDAD MAS POPULAR : %s\n",   acts[0].nombre);
+        printf("      Plazas ocupadas       : %d\n",   acts[0].ocupadas_total);
+        printf("      Plazas totales        : %d\n",   acts[0].plazas_total);
+        printf("      Sesiones registradas  : %d\n\n", acts[0].registros);
+    }
+
+    return n_acts;
+}
+
+// 9. Estadísticas por centro
+// Convierte un carácter para hacer búsquedas flexibles:
+// Funcion inspirada por el ejercicio del parcial
+char palindroma_caracter(char c) {
+    char resultado = c;
+    if (c == '_') {		// Guión bajo '_' a espacio ' '
+        resultado = ' ';
+    } else if (c >= 'A' && c <= 'Z') {
+        resultado = (c + 32); // Mayúsculas a minúsculas
+    }
+    return resultado;
+}
+
+// Aplica palindroma_caracter a toda una cadena
+void palindroma_string(const char *original, char *destino, int max) {
+    int i = 0, j = 0;
+    while (original[i] != '\0' && j < max - 1) {
+        destino[j] = palindroma_caracter(original[i]);
+        i++;
+        j++;
+    }
+    destino[j] = '\0';
+}
+
+//Compara
+int palindroma(const char *texto, const char *busqueda) {
+    char texto_norm[MAX_CAMPO];
+    char busca_norm[MAX_CAMPO];
+    palindroma_string(texto, texto_norm, MAX_CAMPO);
+    palindroma_string(busqueda, busca_norm, MAX_CAMPO);
+
+    int len = strlen(busca_norm);
+    int encontrado = 0;
+    int i = 0;
+
+    while (texto_norm[i] != '\0' && encontrado == 0) {
+        if (texto_norm[i] == busca_norm[0]) {
+            int j = 0;
+            int coincide = 1;
+            while (j < len && coincide == 1) {
+                if (texto_norm[i + j] == '\0' ||
+                    texto_norm[i + j] != busca_norm[j]) {
+                    coincide = 0;
+                }
+                j++;
+            }
+            if (coincide == 1) {
+                encontrado = 1;
+            }
+        }
+        i++;
+    }
+    return encontrado;
+}
+
+// Calcula y muestra el día más activo y la actividad top de cada centro
+int dia_mas_actividad_por_centro(Actividad *actividades, int total) {
+    InfoCentro centros[MAX_CENTROS];
+    int n_centros = 0;
+    int i;
+
+    // Inicializar el array de centros
+    for (i = 0; i < MAX_CENTROS; i++) {
+        centros[i].nombre[0]        = '\0';
+        centros[i].dia_top[0]       = '\0';
+        centros[i].actividad_top[0] = '\0';
+        centros[i].max_ocupacion    = -1;
+    }
+
+    // Recorrer todas las actividades
+    for (i = 0; i < total; i++) {
+        // Buscar si el centro ya existe
+        int idx_centro = -1;
+        int c = 0;
+        while (c < n_centros && idx_centro == -1) {
+            if (strcmp(centros[c].nombre, actividades[i].centro) == 0)
+                idx_centro = c;
+            c++;
+        }
+
+        // Si es nuevo, lo añadimos
+        if (idx_centro == -1 && n_centros < MAX_CENTROS) {
+            idx_centro = n_centros;
+            strncpy(centros[idx_centro].nombre, actividades[i].centro, MAX_CAMPO - 1);
+            centros[idx_centro].nombre[MAX_CAMPO - 1] = '\0';
+            centros[idx_centro].max_ocupacion = -1;
+            n_centros++;
+        }
+
+        // Actualizamos el récord si esta actividad lo supera
+        if (idx_centro != -1) {
+            if (actividades[i].ocupadas >= centros[idx_centro].max_ocupacion) {
+                centros[idx_centro].max_ocupacion = actividades[i].ocupadas;
+                strncpy(centros[idx_centro].dia_top,actividades[i].dia_semana, MAX_CAMPO - 1);
+                strncpy(centros[idx_centro].actividad_top, actividades[i].actividad_base, MAX_CAMPO - 1);
+                centros[idx_centro].dia_top[MAX_CAMPO - 1] = '\0';
+                centros[idx_centro].actividad_top[MAX_CAMPO - 1] = '\0';
+            }
+        }
+    }
+
+    // Tabla resumen
+    printf("\n");
+    printf("==========================================================\n");
+    printf("         ANALISIS DE ACTIVIDAD POR CENTRO\n");
+    printf("==========================================================\n");
+    printf("   %-30s | %-12s | %s\n", "CENTRO", "DIA MAS ACT.", "ACTIVIDAD TOP");
+
+
+    for (i = 0; i < n_centros; i++) {
+        printf("   %-30s | %-12s | %s\n",
+               centros[i].nombre, centros[i].dia_top, centros[i].actividad_top);
+    }
+    printf("\n");
+
+    return n_centros;
+}
+
+// Igual que dia_mas_actividad_por_centro pero centrado en la actividad top
+int actividades_populares_por_centro() {
+    /* La lógica es la misma; reutilizamos la función. La tabla ya muestra
+       la actividad top de cada centro. */
+    return dia_mas_actividad_por_centro();
+}
+
+// Pide al usuario un texto y muestra los horarios de los centros que coinciden
+int horarios_de_centro(Actividad *actividades, int total) {
+    char busca_centro[MAX_CAMPO];
+    int i;
+    int encontrados = 0;
+
+    printf("\n   ¿De que centro quieres ver los horarios? ");
+    leer_linea(busca_centro, MAX_CAMPO);
+
+    if (busca_centro[0] == '\0') {
+        printf("   No se ha introducido ningun nombre.\n");
+        return 0;
+    }
+
+    printf("\n   Horarios en centros que coinciden con '%s':\n\n", busca_centro);
+    printf("   %-25s  %-12s  %-8s  %-8s  %s\n",
+           "CENTRO", "DIA", "INICIO", "FIN", "ACTIVIDAD");
+    printf("   ------------------------------------------------------------------------------\n");
+
+    for (i = 0; i < total; i++) {
+        if (palindroma(actividades[i].centro, busca_centro) == 1) {
+            printf("   %-25s  %-12s  %-8s  %-8s  %s\n",
+                   actividades[i].centro,
+                   actividades[i].dia_semana,
+                   actividades[i].hora_inicio,
+                   actividades[i].hora_fin,
+                   actividades[i].actividad_base);
+            encontrados++;
+        }
+    }
+
+    if (encontrados == 0) {
+        printf("   No se encontraron resultados para '%s'.\n", busca_centro);
+    } else {
+        printf("\n   Total encontrados: %d\n", encontrados);
+    }
+    printf("\n");
+    return encontrados;
+}
+
+// 10. MENÚ DE ESTADÍSTICAS
+int menu_estadisticas() {
+    int opcion;
+    printf("=== ESTADISTICAS ===\n");
+    printf("1) Dia con mas actividad (general)\n");
+    printf("2) Actividades mas populares (general)\n");
+    printf("3) Dia con mas actividad por centro\n");
+    printf("4) Actividades mas populares por centro\n");
+    printf("5) Horarios de un centro\n");
+    printf("0) Volver\n");
+    printf("Elige una opcion: ");
+    opcion = leer_entero();
+
+    if (opcion == 1) {
+        dia_mas_actividad_general();
+    } else if (opcion == 2) {
+        actividades_mas_populares_general();
+    } else if (opcion == 3) {
+        dia_mas_actividad_por_centro();
+    } else if (opcion == 4) {
+        actividades_populares_por_centro();
+    } else if (opcion == 5) {
+        horarios_de_centro();
+    } else if (opcion != 0) {
+        printf("Opcion no valida.\n");
+    }
+    return opcion;
+}
+
+// 11. MENÚ PRINCIPAL
+int menu_principal() {
+    printf("\n¿Que desea realizar?\n");
+    printf("(1) Recomendacion personalizada\n");
+    printf("(2) Ordenar actividades\n");
+    printf("(3) Ver estadisticas\n");
+    printf("(0) Salir\n");
+    printf("Elige una opcion: ");
+    return leer_entero();
+}
+
+
+// 12. MAIN
+int main(int argc, char *argv[]) {
+    const char *ruta = "dataset.csv";
+    int total = 0;
+    Usuario usuario_actual;
+    if (argc >= 2)
+	ruta = argv[1];
+
+   // RESERVA DE MEMORIA DINAMICA (malloc)
+   // Al ser punteros de diferente tipo (void != Actividad) tengo que forzar que el void se convierta en Actividad con (Actividad*)
+   // cast incluido por si se compila como C++
+	Actividad * actividades = (Actividad *) malloc(MAX_ACTIVIDADES * sizeof(Actividad));
+    if (actividades == NULL) {
+        printf("Error: memoria no disponible\n");
+        return -1;
+    }
+
+    if (cargar_csv(ruta) == 0) {
+        free(actividades);  // liberar antes de salir si falla la carga
+        return 1;
+    }
+
+    printf("Le presentamos la aplicacion para poder observar los datos\n de las actividades fisicas de Madrid.\n\n");
+
+    login();
+
+    int opcion;
+    do {
+        opcion = menu_principal();
+
+        if (opcion == 1) {
+            // Quiere recomendación
+            recomendar();
+            if (es_util_recomendacion() == 1) {
+                // Sí es útil: continuar
+            } else {
+                menu_ordenar();
+            }
+        } else if (opcion == 2) {
+            // Ordenar actividades manualmente
+            menu_ordenar();
+        } else if (opcion == 3) {
+            // Ver estadísticas
+            menu_estadisticas();
+        } else if (opcion == 0) {
+            printf("Hasta luego, %s\n", usuario_actual.nombre);
+        } else {
+            printf("Tiene que escribir una opcion valida.\n");
+        }
+    } while (opcion != 0);
+
+    // Siempre que se hace malloc se debe hacer free al terminar.
+    free(actividades);
+
+    return 0;
+}
